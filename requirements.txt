@@ -1,0 +1,6 @@
+Django==5.2.*
+psycopg[binary]==3.2.*
+gunicorn==23.*
+Pillow==11.*
+django-storages[s3]==1.14.*
+python-dotenv==1.*

@@ -1,0 +1,13 @@
+{% extends "panel/base.html" %}
+{% block title %}Eliminar{% endblock %}
+{% block contenido %}
+<div class="cab"><h1>Eliminar {{ recurso.etiqueta }}</h1></div>
+<p>¿Eliminar <strong>{{ object }}</strong>? Esta acción no se puede deshacer.</p>
+<form method="post" class="form">
+  {% csrf_token %}
+  <div class="acc">
+    <button type="submit" class="btn danger">Sí, eliminar</button>
+    <a class="cancelar" href="{% url recurso.url_list %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ recurso.etiqueta|capfirst }}{% endblock %}
+{% block contenido %}
+<div class="cab">
+  <h1>{% if object %}Editar{% else %}Nuevo{% endif %} · {{ recurso.etiqueta }}</h1>
+</div>
+
+<p class="ayuda">Los campos marcados con <span class="req">*</span> son obligatorios.</p>
+<form method="post" enctype="multipart/form-data" class="form">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {% for campo in form %}
+  <div class="campo">
+    <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+    {{ campo }}
+    {% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}
+    {{ campo.errors }}
+  </div>
+  {% endfor %}
+  <div class="acc">
+    <button type="submit" class="btn">Guardar</button>
+    <a class="cancelar" href="{% url recurso.url_list %}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

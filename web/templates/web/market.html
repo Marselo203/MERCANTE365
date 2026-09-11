@@ -1,0 +1,69 @@
+{% extends "web/base.html" %}
+{% block title %}Catálogo — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="cat-hero envoltorio">
+  <h1>Catálogo</h1>
+  <form method="get" class="buscador">
+    {% if categoria_activa %}<input type="hidden" name="categoria" value="{{ categoria_activa }}">{% endif %}
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar producto, rubro o proveedor">
+    <button class="btn" type="submit">Buscar</button>
+  </form>
+</section>
+
+<section class="rubros envoltorio">
+  <div class="rubros-cab">
+    <h2>Explorar por rubro</h2>
+    {% if categoria_activa %}<a href="{% url 'web:market' %}{% if q %}?q={{ q }}{% endif %}">Ver todos</a>{% endif %}
+  </div>
+  <div class="rubros-grid">
+    {% for cat in categorias %}
+    <a class="rubro-card{% if cat.slug == categoria_activa %} activo{% endif %}"
+       href="?categoria={{ cat.slug }}{% if q %}&q={{ q }}{% endif %}">
+      <span class="nombre">{{ cat.nombre }}</span>
+      <span class="conteo">{{ cat.num_productos }} producto{{ cat.num_productos|pluralize }}</span>
+    </a>
+    {% empty %}
+    <p class="vacio">Todavía no hay rubros cargados.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="resultados envoltorio">
+  <div class="cab-resultados">
+    <p>{{ total }} producto{{ total|pluralize }}{% if categoria_activa_obj %} en {{ categoria_activa_obj.nombre }}{% endif %}{% if q %} para "{{ q }}"{% endif %}</p>
+    <form method="get" class="orden">
+      {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+      {% if categoria_activa %}<input type="hidden" name="categoria" value="{{ categoria_activa }}">{% endif %}
+      <label>Ordenar por
+        <select name="orden" onchange="this.form.submit()">
+          <option value="" {% if not orden %}selected{% endif %}>Más recientes</option>
+          <option value="precio_asc" {% if orden == "precio_asc" %}selected{% endif %}>Precio: menor a mayor</option>
+          <option value="precio_desc" {% if orden == "precio_desc" %}selected{% endif %}>Precio: mayor a menor</option>
+        </select>
+      </label>
+    </form>
+  </div>
+
+  <div class="grid">
+    {% for p in page_obj %}
+    {% include "web/_tarjeta_producto.html" %}
+    {% empty %}
+    <p class="vacio">No encontramos productos con esos filtros.</p>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pag">
+    {% if page_obj.has_previous %}<a href="?{{ querystring_sin_page }}page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?{{ querystring_sin_page }}page={{ page_obj.next_page_number }}">Siguiente ›</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

@@ -1,0 +1,65 @@
+# Stack base. Sin 'platform:' en ningún servicio, a propósito: así cada máquina
+# construye y descarga para su propia arquitectura sin que tengas que tocar nada.
+#
+# Arranque:
+#   desarrollo (Arch)  -> docker compose up --build
+#                         (compose.override.yaml se carga solo)
+#   producción (Oracle)-> docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+
+name: b2b-cl-bo
+
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Checksums vienen activados por defecto desde PG18; se deja explícito
+      # para que un pg_upgrade futuro no falle por configuraciones distintas.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      # PG18+ guarda la data en un subdirectorio por versión dentro de este
+      # punto de montaje (/var/lib/postgresql/18/docker). Montar aquí y no en
+      # /data es lo que recomienda la imagen oficial y lo que permite
+      # 'pg_upgrade --link' sin cruzar el borde del mount.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Object Storage de OCI (API compatible con S3)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-}
+      AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL:-}
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+
+volumes:
+  pgdata:
+  staticfiles:
+  media:

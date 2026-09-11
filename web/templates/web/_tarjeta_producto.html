@@ -1,0 +1,18 @@
+<a class="tarjeta" href="{% url 'web:producto_detalle' p.pk %}">
+  <div class="foto">
+    {% if p.verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
+    {% with img=p.imagen_principal %}
+    {% if img %}<img src="{{ img.imagen.url }}" alt="{{ img.alt|default:p.nombre }}">{% endif %}
+    {% endwith %}
+    <span class="rubro">{{ p.categoria.nombre }}</span>
+  </div>
+  <div class="cuerpo">
+    <h3>{{ p.nombre }}</h3>
+    <p class="empresa">{{ p.empresa.nombre_comercial|default:p.empresa.razon_social }}</p>
+    <p class="precio">{{ p.moneda }} {{ p.precio_unitario }}</p>
+    <div class="chips">
+      <span class="chip">Mín. {{ p.cantidad_minima_pedido }}{% if p.unidad_empaque %} {{ p.unidad_empaque }}{% endif %}</span>
+      <span class="chip">{{ p.plazo_entrega_dias }} días</span>
+    </div>
+  </div>
+</a>

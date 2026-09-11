@@ -1,0 +1,39 @@
+{% extends "panel/base.html" %}
+{% block title %}{{ recurso.etiqueta_plural|capfirst }}{% endblock %}
+{% block contenido %}
+<div class="cab">
+  <h1>{{ recurso.etiqueta_plural|capfirst }}</h1>
+  <a class="btn" href="{% url recurso.url_add %}">Nuevo</a>
+</div>
+
+{% if recurso.descripcion %}<div class="info-lista">{{ recurso.descripcion }}</div>{% endif %}
+
+<div class="tabla-wrap">
+<table>
+  <thead>
+    <tr>{% for h in encabezados %}<th>{{ h }}</th>{% endfor %}<th></th></tr>
+  </thead>
+  <tbody>
+    {% for fila in filas %}
+    <tr>
+      {% for v in fila.valores %}<td>{{ v }}</td>{% endfor %}
+      <td class="acc">
+        <a href="{% url recurso.url_edit fila.pk %}">Editar</a>
+        <a class="del" href="{% url recurso.url_del fila.pk %}">Eliminar</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="99" class="vacio">Sin registros.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if is_paginated %}
+<div class="pag">
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+  <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Siguiente ›</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

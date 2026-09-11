@@ -1,0 +1,15 @@
+.git
+.gitignore
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+/staticfiles/
+/media/
+respaldo-*.sql.gz
+*.sql.gz
+.idea/
+.vscode/
+.DS_Store
+README*.md

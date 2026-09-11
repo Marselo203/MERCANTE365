@@ -1,0 +1,76 @@
+{% extends "web/base.html" %}
+{% load static %}
+{% block title %}MERCANTE365 — Proveedores de Chile para empresas de Bolivia{% endblock %}
+
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="hero">
+  <div class="envoltorio hero-int">
+    <div class="etiqueta">VITRINA · PROVEEDORES VERIFICADOS</div>
+    <h1>Proveedores chilenos, <span class="grad">a un requerimiento de distancia</span></h1>
+    <p>Empresas compradoras en Bolivia exploran el catálogo y envían su requerimiento. Nuestro equipo de intermediación clasifica, recomienda y presenta la coincidencia.</p>
+    <a class="btn" href="{% url 'web:market' %}">Ver catálogo</a>
+  </div>
+</section>
+
+<section class="destacados envoltorio" id="destacados">
+  <h2>Productos destacados</h2>
+  <div class="grid">
+    {% for p in destacados %}
+    {% include "web/_tarjeta_producto.html" %}
+    {% empty %}
+    <p class="vacio">Todavía no hay productos destacados publicados.</p>
+    {% endfor %}
+  </div>
+  <p class="ver-todo"><a href="{% url 'web:market' %}">Ver todo el catálogo →</a></p>
+</section>
+
+<section class="verificacion envoltorio">
+  <div class="verificacion-caja">
+    <span class="badge-verificado badge-verificado-suelto" title="Verificado por la plataforma">✓ Verificado</span>
+    <div>
+      <h3>¿Qué significa "Verificado"?</h3>
+      <p>Cuando un producto tiene esta insignia, nuestro equipo corroboró con el proveedor su información técnica, sus condiciones comerciales y la calidad declarada. Es una garantía adicional de que lo que ves en la ficha es preciso antes de que envíes tu requerimiento.</p>
+    </div>
+  </div>
+</section>
+
+<section class="nosotros envoltorio" id="nosotros">
+  <div class="nosotros-texto">
+    <div class="col">
+      <h2>Quiénes somos</h2>
+      <p>MERCANTE365 es la plataforma de intermediación comercial entre proveedores
+      chilenos y empresas compradoras de Bolivia. Existimos para achicar la
+      distancia entre los dos mercados: la sociedad que opera la plataforma reside
+      en Chile y trabaja directamente con las empresas compradoras bolivianas en
+      cada requerimiento.</p>
+    </div>
+    <div class="col">
+      <h2>Qué hacemos</h2>
+      <p>Verificamos cada empresa proveedora y cada producto antes de publicarlo,
+      clasificamos los requerimientos que llegan y gestionamos el contacto
+      comercial hasta que la coincidencia queda establecida entre las dos partes.</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="n">{{ stats.proveedores }}</span><span class="t">proveedor{{ stats.proveedores|pluralize:"es" }} verificado{{ stats.proveedores|pluralize }}</span></div>
+    <div class="stat"><span class="n">{{ stats.productos }}</span><span class="t">producto{{ stats.productos|pluralize }} publicado{{ stats.productos|pluralize }}</span></div>
+    <div class="stat"><span class="n">{{ stats.rubros }}</span><span class="t">rubro{{ stats.rubros|pluralize }} disponible{{ stats.rubros|pluralize }}</span></div>
+  </div>
+</section>
+
+<section class="como-funciona envoltorio" id="como-funciona">
+  <h2>Cómo funciona</h2>
+  <ol class="pasos">
+    <li><span class="n">01</span><span>Explorás el catálogo de proveedores verificados.</span></li>
+    <li><span class="n">02</span><span>Enviás tu requerimiento desde la ficha del producto: volumen, plazo y observaciones.</span></li>
+    <li><span class="n">03</span><span>Nuestro equipo lo clasifica y confirma disponibilidad con el proveedor.</span></li>
+    <li><span class="n">04</span><span>Te contactamos en 24 a 48 horas hábiles con la coincidencia y los siguientes pasos.</span></li>
+  </ol>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

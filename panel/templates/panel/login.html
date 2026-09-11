@@ -1,0 +1,39 @@
+{% extends "panel/base.html" %}
+{% block title %}Ingresar{% endblock %}
+{% block contenido %}
+<div class="login">
+  <h1>Ingresar</h1>
+  {% if form.non_field_errors %}
+  <div class="err">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% for campo in form %}
+    <div class="campo">
+      <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+      {% if campo.name == "password" %}
+      <div class="pass-wrap">
+        {{ campo }}
+        <button type="button" class="ojito" data-toggle-password aria-label="Mostrar contraseña">👁</button>
+      </div>
+      {% else %}
+      {{ campo }}
+      {% endif %}
+      {{ campo.errors }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn">Entrar</button>
+  </form>
+</div>
+<script>
+document.querySelectorAll("[data-toggle-password]").forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    var input = boton.previousElementSibling;
+    var mostrando = input.type === "text";
+    input.type = mostrando ? "password" : "text";
+    boton.textContent = mostrando ? "👁" : "🙈";
+    boton.setAttribute("aria-label", mostrando ? "Mostrar contraseña" : "Ocultar contraseña");
+  });
+});
+</script>
+{% endblock %}

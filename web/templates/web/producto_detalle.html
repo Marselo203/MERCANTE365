@@ -1,0 +1,107 @@
+{% extends "web/base.html" %}
+{% block title %}{{ producto.nombre }} — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% if messages %}
+  {% for mensaje in messages %}
+  <p class="mensaje-{{ mensaje.tags }}">{{ mensaje }}</p>
+  {% endfor %}
+  {% endif %}
+
+  <nav class="migas">
+    <a href="{% url 'web:market' %}">Catálogo</a>
+    {% for cat in producto.categoria.cadena %}
+    » <a href="{% url 'web:market' %}?categoria={{ cat.slug }}">{{ cat.nombre }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="detalle-layout">
+    <div class="galeria">
+      {% with imagenes=producto.imagenes.all %}
+      <div class="foto-grande{% if not imagenes %} sin-foto{% endif %}">
+        {% if producto.verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
+        {% if imagenes %}<img src="{{ imagenes.0.imagen.url }}" alt="{{ imagenes.0.alt|default:producto.nombre }}">{% endif %}
+      </div>
+      {% if imagenes|length > 1 %}
+      <div class="miniaturas">
+        {% for img in imagenes %}
+        <img src="{{ img.imagen.url }}" alt="{{ img.alt|default:producto.nombre }}">
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    <div class="info-producto">
+      <span class="rubro-pill">{{ producto.categoria.nombre }}</span>
+      <h1>{{ producto.nombre }}</h1>
+      <p class="empresa-linea">
+        {{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}
+        · {{ producto.empresa.ciudad }}
+        {% if producto.empresa.estado_verificacion == "aprobada" %}<span class="verificado">VERIFICADO</span>{% endif %}
+      </p>
+
+      <div class="precio-grande">{{ producto.moneda }} {{ producto.precio_unitario }}</div>
+
+      <dl class="ficha">
+        <div><dt>Pedido mínimo</dt><dd>{{ producto.cantidad_minima_pedido }}{% if producto.unidad_empaque %} · {{ producto.unidad_empaque }}{% endif %}</dd></div>
+        <div><dt>Plazo de despacho</dt><dd>{{ producto.plazo_entrega_dias }} días</dd></div>
+        <div><dt>Stock disponible</dt><dd>{{ producto.stock_disponible }}</dd></div>
+        {% if producto.sku %}<div><dt>SKU</dt><dd>{{ producto.sku }}</dd></div>{% endif %}
+      </dl>
+
+      {% if producto.descripcion_tecnica %}
+      <p class="descripcion">{{ producto.descripcion_tecnica }}</p>
+      {% endif %}
+
+      {% if atributos_mostrar %}
+      <h3>Especificaciones técnicas</h3>
+      <table class="atributos-tabla">
+        {% for etiqueta, valor, unidad in atributos_mostrar %}
+        <tr><th>{{ etiqueta }}</th><td>{{ valor }}{% if unidad %} {{ unidad }}{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+
+      {% with escalas=producto.escalas_precio.all %}
+      {% if escalas %}
+      <h3>Escalas de precio</h3>
+      <table class="atributos-tabla">
+        {% for e in escalas %}
+        <tr><th>Desde {{ e.volumen_minimo }}</th><td>{{ producto.moneda }} {{ e.precio_unitario }}</td></tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+      {% endwith %}
+
+      <div class="requerimiento-caja">
+        <h3>Enviar requerimiento</h3>
+        <p>Nuestro equipo de intermediación clasifica tu pedido y presenta la coincidencia con {{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}.</p>
+        <p class="ayuda">Los campos con <span class="req">*</span> son obligatorios.</p>
+        <form method="post" class="form-requerimiento">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          {% for campo in form %}
+          <div class="campo">
+            <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+            {{ campo }}
+            {{ campo.errors }}
+          </div>
+          {% endfor %}
+          <button type="submit" class="btn">Enviar requerimiento</button>
+          <p class="nota">Respuesta del equipo de intermediación en 24 a 48 horas hábiles.</p>
+        </form>
+        {% if contacto %}
+        <p class="nota">¿Preferís escribir directo? <a href="mailto:{{ contacto.email }}?subject=Consulta sobre {{ producto.nombre }}">{{ contacto.email }}</a></p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

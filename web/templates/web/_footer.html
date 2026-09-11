@@ -1,0 +1,18 @@
+{% load static %}
+<footer class="pie">
+  <div class="envoltorio pie-int">
+    <div>
+      <div class="marca-box"><img class="logo chico" src="{% static 'web/logo.png' %}" alt="MERCANTE365"></div>
+      <p>Intermediación comercial entre proveedores de Chile y empresas compradoras
+      de Bolivia.</p>
+    </div>
+    <div>
+      <span class="tit">Catálogo</span>
+      <a href="{% url 'web:market' %}">Ver todos los productos</a>
+    </div>
+    <div>
+      <span class="tit">Empresas</span>
+      <a href="{% url 'panel:login' %}">Ingresar al panel</a>
+    </div>
+  </div>
+</footer>

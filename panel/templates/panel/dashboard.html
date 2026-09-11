@@ -1,0 +1,20 @@
+{% extends "panel/base.html" %}
+{% block title %}Panel{% endblock %}
+{% block contenido %}
+<h1>Panel de gestión</h1>
+
+<div class="metricas">
+  {% for etiqueta, valor in metricas %}
+  <div class="metrica{% if forloop.first %} destacada{% endif %}"><span class="n">{{ valor }}</span><span class="t">{{ etiqueta }}</span></div>
+  {% endfor %}
+</div>
+
+<h2>Catálogo</h2>
+<div class="accesos">
+  {% for url_name, etiqueta in panel_nav %}
+  {% if url_name != "panel:dashboard" %}
+  <a href="{% url url_name %}">{{ etiqueta|capfirst }}</a>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}
