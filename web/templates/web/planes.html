@@ -1,0 +1,47 @@
+{% extends "web/base.html" %}
+{% block title %}Planes — MERCANTE365{% endblock %}
+
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="planes envoltorio">
+  <h2>Planes para empresas proveedoras</h2>
+  <div class="planes-grid">
+    <div class="plan">
+      <div class="nombre">Free</div>
+      <p class="tagline">Para probar la plataforma</p>
+      <ul>
+        <li>Hasta 5 productos publicados</li>
+        <li class="no">Menor visibilidad en el catálogo</li>
+        <li class="no">Dashboard limitado</li>
+        <li class="no">Sin link personalizado</li>
+      </ul>
+      <a class="btn-ghost" href="{% url 'panel:login' %}">Empezar gratis</a>
+    </div>
+    <div class="plan destacado">
+      <div class="nombre">Premium</div>
+      <p class="tagline">Para vender en serio</p>
+      <ul>
+        <li>Dashboard completo de la tienda</li>
+        <li>Mayor visibilidad en el catálogo</li>
+        <li>Productos publicados ilimitados</li>
+        <li>Link personalizado de tu vitrina</li>
+      </ul>
+      <a class="btn-azul" href="{% url 'panel:login' %}">Elegir Premium</a>
+    </div>
+    <div class="plan">
+      <div class="nombre">Premium+</div>
+      <p class="tagline">Para escalar la red comercial</p>
+      <ul>
+        <li>Todo lo de Premium</li>
+        <li>Acceso a la red de comerciantes</li>
+      </ul>
+      <a class="btn-marino" href="{% url 'panel:login' %}">Elegir Premium+</a>
+    </div>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

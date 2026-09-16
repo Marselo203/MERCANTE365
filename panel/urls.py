@@ -40,9 +40,9 @@ RECURSOS = [
     {
         "slug": "empresa", "model": Empresa,
         "etiqueta": "empresa", "etiqueta_plural": "empresas",
-        "descripcion": "Empresas proveedoras (venden productos) y compradoras (envían "
-        "requerimientos). Una proveedora recién se muestra como verificada en el catálogo "
-        "cuando le cambiás el estado a «Aprobada».",
+        "descripcion": "Todas las empresas registradas, proveedoras y compradoras. Una "
+        "proveedora recién se muestra como verificada en el catálogo cuando le cambiás el "
+        "estado a «Aprobada».",
         "form_fields": [
             "rol", "razon_social", "nombre_comercial", "identificador_tributario",
             "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion",
@@ -51,6 +51,53 @@ RECURSOS = [
         "columnas": [
             ("razon_social", "Razón social"), ("get_rol_display", "Rol"),
             ("get_estado_verificacion_display", "Verificación"), ("ciudad", "Ciudad"),
+        ],
+    },
+    {
+        "slug": "proveedor", "model": Empresa, "filtro": {"rol": Empresa.Rol.PROVEEDORA},
+        "etiqueta": "proveedor", "etiqueta_plural": "proveedores",
+        "descripcion": "Solo las empresas proveedoras. Cambiá el estado a «Aprobada» para "
+        "que se muestren como verificadas en el catálogo.",
+        "form_fields": [
+            "razon_social", "nombre_comercial", "identificador_tributario",
+            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion",
+            "estado_verificacion",
+        ],
+        "columnas": [
+            ("razon_social", "Razón social"),
+            ("get_estado_verificacion_display", "Verificación"), ("ciudad", "Ciudad"),
+        ],
+    },
+    {
+        "slug": "comprador", "model": Empresa, "filtro": {"rol": Empresa.Rol.COMPRADORA},
+        "etiqueta": "comprador", "etiqueta_plural": "compradores",
+        "descripcion": "Las empresas que envían requerimientos desde el catálogo público.",
+        "form_fields": [
+            "razon_social", "nombre_comercial", "identificador_tributario",
+            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion",
+        ],
+        "columnas": [
+            ("razon_social", "Razón social"), ("ciudad", "Ciudad"),
+        ],
+    },
+    {
+        "slug": "calificacion", "model": Empresa, "filtro": {"rol": Empresa.Rol.PROVEEDORA},
+        "sin_alta": True,
+        "etiqueta": "calificación de proveedor", "etiqueta_plural": "calificación de proveedores",
+        "descripcion": "El proveedor NO puede autodeclararse «calificado»: marcá solo los "
+        "criterios que MERCANTE365 revisó de verdad y recién ahí activá «Proveedor "
+        "calificado» (documento de producto, secciones 21 y 32).",
+        "form_fields": [
+            "chk_info_empresarial", "chk_contacto_revisado", "chk_direccion_registrada",
+            "chk_sitio_web_revisado", "chk_info_comercial_revisada",
+            "chk_producto_info_disponible", "chk_producto_fotos_disponibles",
+            "chk_producto_ficha_tecnica", "chk_producto_marca_identificada",
+            "chk_producto_info_comercial",
+            "documentacion_estado", "calificado",
+        ],
+        "columnas": [
+            ("razon_social", "Proveedor"), ("progreso_checklist", "Checklist"),
+            ("get_documentacion_estado_display", "Documentación"), ("calificado", "Calificado"),
         ],
     },
     {
@@ -125,19 +172,61 @@ RECURSOS = [
 ]
 
 
+# Secciones del Back Office que menciona el documento de producto pero que
+# todavía son visión futura (fases posteriores a esta), sin modelo propio
+# todavía: muestran una página fija "Próximamente" en vez de un 404.
+PROXIMAMENTE = [
+    ("catalogos", "Catálogos"),
+    ("premium", "Premium"),
+    ("premium_plus", "Premium Plus"),
+    ("red_comercial", "Red Comercial"),
+    ("oportunidades", "Oportunidades"),
+    ("ventas", "Ventas"),
+    ("comisiones", "Comisiones"),
+    ("configuracion", "Configuración"),
+]
+
+# Orden del menú del Back Office tal como lo describe el documento de
+# producto: mezcla los recursos reales de arriba con las secciones
+# "Próximamente". Cada entrada es (tipo, slug) o (tipo, slug, etiqueta) para
+# pisar la etiqueta del recurso solo en el menú (ej. "requerimiento" se
+# etiqueta acá "Leads / RFQ", tal como lo nombra el documento).
+MENU = [
+    ("recurso", "empresa"),
+    ("recurso", "proveedor"),
+    ("recurso", "producto"),
+    ("recurso", "categoria"),
+    ("proximamente", "catalogos"),
+    ("recurso", "calificacion", "Calificación"),
+    ("proximamente", "premium"),
+    ("proximamente", "premium_plus"),
+    ("proximamente", "red_comercial"),
+    ("recurso", "requerimiento", "Leads / RFQ"),
+    ("proximamente", "oportunidades"),
+    ("proximamente", "ventas"),
+    ("proximamente", "comisiones"),
+    ("recurso", "comprador"),
+    ("proximamente", "configuracion"),
+]
+
+
 def _crud(r):
+    """`sin_alta` (opcional): la vista es una lista angosta sobre un modelo que
+    ya se gestiona completo desde otro recurso (ej. «calificación» es un
+    subconjunto de campos de `Empresa`) — no tiene sentido crear ni eliminar
+    desde ahí, solo listar y editar esos campos."""
     s = r["slug"]
-    r = dict(
-        r,
-        url_list=f"panel:{s}_list", url_add=f"panel:{s}_add",
-        url_edit=f"panel:{s}_edit", url_del=f"panel:{s}_del",
-    )
-    return [
+    r = dict(r, url_list=f"panel:{s}_list", url_edit=f"panel:{s}_edit")
+    urls = [
         path(f"{s}/", views.Lista.as_view(recurso=r), name=f"{s}_list"),
-        path(f"{s}/nuevo/", views.Crear.as_view(recurso=r), name=f"{s}_add"),
         path(f"{s}/<int:pk>/", views.Editar.as_view(recurso=r), name=f"{s}_edit"),
-        path(f"{s}/<int:pk>/eliminar/", views.Eliminar.as_view(recurso=r), name=f"{s}_del"),
     ]
+    if not r.get("sin_alta"):
+        r["url_add"] = f"panel:{s}_add"
+        r["url_del"] = f"panel:{s}_del"
+        urls.append(path(f"{s}/nuevo/", views.Crear.as_view(recurso=r), name=f"{s}_add"))
+        urls.append(path(f"{s}/<int:pk>/eliminar/", views.Eliminar.as_view(recurso=r), name=f"{s}_del"))
+    return urls
 
 
 urlpatterns = [
@@ -147,3 +236,11 @@ urlpatterns = [
 ]
 for _r in RECURSOS:
     urlpatterns += _crud(_r)
+for _slug, _etiqueta in PROXIMAMENTE:
+    urlpatterns.append(
+        path(
+            f"proximamente/{_slug}/",
+            views.Proximamente.as_view(titulo=_etiqueta),
+            name=f"proximamente_{_slug}",
+        )
+    )

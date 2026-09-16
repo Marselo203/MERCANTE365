@@ -4,8 +4,9 @@
     <a href="{% url 'web:home' %}"><span class="marca-box"><img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365"></span></a>
     <nav>
       <a href="{% url 'web:market' %}"{% if request.resolver_match.url_name == 'market' or request.resolver_match.url_name == 'producto_detalle' %} class="activo"{% endif %}>Catálogo</a>
-      <a href="{% url 'web:home' %}#nosotros">Quiénes somos</a>
-      <a href="{% url 'web:home' %}#como-funciona">Cómo funciona</a>
+      <a href="{% url 'web:quienes_somos' %}"{% if request.resolver_match.url_name == 'quienes_somos' %} class="activo"{% endif %}>Quiénes somos</a>
+      <a href="{% url 'web:como_funciona' %}"{% if request.resolver_match.url_name == 'como_funciona' %} class="activo"{% endif %}>Cómo funciona</a>
+      <a href="{% url 'web:planes' %}"{% if request.resolver_match.url_name == 'planes' %} class="activo"{% endif %}>Planes</a>
     </nav>
     <span class="sp"></span>
     <a class="ingresar" href="{% url 'panel:login' %}">Ingresar</a>

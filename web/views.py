@@ -23,6 +23,14 @@ class Home(TemplateView):
             Producto.objects.filter(publicado=True, destacado=True)
             .select_related("empresa", "categoria")[:8]
         )
+        return ctx
+
+
+class QuienesSomos(TemplateView):
+    template_name = "web/quienes_somos.html"
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
         ctx["stats"] = {
             "proveedores": Empresa.objects.filter(
                 rol=Empresa.Rol.PROVEEDORA,
@@ -32,6 +40,14 @@ class Home(TemplateView):
             "rubros": Categoria.objects.filter(padre__isnull=True).count(),
         }
         return ctx
+
+
+class ComoFunciona(TemplateView):
+    template_name = "web/como_funciona.html"
+
+
+class Planes(TemplateView):
+    template_name = "web/planes.html"
 
 
 class Market(TemplateView):

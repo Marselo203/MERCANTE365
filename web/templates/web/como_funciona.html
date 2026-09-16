@@ -1,0 +1,30 @@
+{% extends "web/base.html" %}
+{% block title %}Cómo funciona — MERCANTE365{% endblock %}
+
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="como-funciona envoltorio">
+  <h2>Cómo funciona</h2>
+  <ol class="pasos">
+    <li><span class="n">01</span><span>Explorás el catálogo de proveedores verificados.</span></li>
+    <li><span class="n">02</span><span>Enviás tu requerimiento desde la ficha del producto: volumen, plazo y observaciones.</span></li>
+    <li><span class="n">03</span><span>Nuestro equipo lo clasifica y confirma disponibilidad con el proveedor.</span></li>
+    <li><span class="n">04</span><span>Te contactamos en 24 a 48 horas hábiles con la coincidencia y los siguientes pasos.</span></li>
+  </ol>
+</section>
+
+<section class="verificacion envoltorio" id="modelo-calificacion">
+  <div class="verificacion-caja">
+    <span class="badge-verificado badge-verificado-suelto" title="Verificado por la plataforma">✓ Verificado</span>
+    <div>
+      <h3>¿Qué significa "Verificado"?</h3>
+      <p>Cuando un producto tiene esta insignia, nuestro equipo corroboró con el proveedor su información técnica, sus condiciones comerciales y la calidad declarada. Es una garantía adicional de que lo que ves en la ficha es preciso antes de que envíes tu requerimiento.</p>
+    </div>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

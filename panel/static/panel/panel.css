@@ -1,88 +1,93 @@
-/* Neobrutalismo: bordes negros gruesos, sombra dura (sin blur, desplazada) y
-   los elementos clicables "se hunden" en su sombra al pasar el mouse/tocar.
-   Misma paleta de marca (negro/blanco/verde/morado/degradado); --peligro es
-   semántico (eliminar/error), no de marca. Archivo/Karla, igual que la landing. */
+/* Estilo moderno/SaaS claro, igual lenguaje visual que el sitio público
+   (web.css): sin bordes negros gruesos ni sombra dura. --peligro sigue
+   siendo semántico (eliminar/error), no de marca. */
 :root{
-  --negro:#000000; --blanco:#FFFFFF;
-  --verde:#85C441; --morado:#7B52AE;
-  --grad: linear-gradient(135deg,#0072CE,#38B44A);
-  --muted:#3A3A3A;
+  --oscuro:#0F1626; --blanco:#FFFFFF;
+  --azul:#0D5CBB; --verde:#44A747;
+  --muted:#5B6472;
+  --borde:#E4E8EF;
   --peligro:#E5484D;
-  --sombra:5px 5px 0 var(--negro);
-  --sombra-chica:3px 3px 0 var(--negro);
+  --sombra:0 12px 28px rgba(15,22,38,.09);
+  --sombra-chica:0 4px 14px rgba(15,22,38,.07);
 }
 *{box-sizing:border-box}
 img{max-width:100%}
-body{margin:0;background:var(--blanco);color:var(--negro);
+body{margin:0;background:#F7F9FC;color:var(--oscuro);
   font:15px/1.5 Karla,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 h1,h2,h3{font-family:Archivo,system-ui,sans-serif;letter-spacing:-.01em;margin:0}
-a{color:var(--verde);text-decoration:none}
+a{color:var(--azul);text-decoration:none}
 a:hover{text-decoration:underline}
 h1{font:800 27px/1.15 Archivo,sans-serif;margin:0 0 4px}
 h2{font:800 13px/1 Archivo,sans-serif;text-transform:uppercase;letter-spacing:.06em;
-  color:var(--negro);margin:32px 0 12px}
+  color:var(--oscuro);margin:32px 0 12px}
 
-/* Barra superior: fondo negro, logo en chip blanco con borde. Dos filas
-   SIEMPRE (nunca una altura fija con contenido que puede envolver). */
-.barra{background:var(--negro);color:var(--blanco);padding:14px 24px;border-bottom:3px solid var(--negro)}
-.barra-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.marca-box{display:inline-flex;align-items:center;background:var(--blanco);padding:6px 12px;
-  border-radius:8px;border:3px solid var(--verde)}
-.barra .marca img{height:30px;display:block}
-.barra nav{display:flex;gap:12px 18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
-  border-top:2px solid rgba(255,255,255,.25)}
-.barra nav a{color:rgba(255,255,255,.92);font-weight:700}
-.barra nav a:hover{color:var(--verde);text-decoration:none}
-.barra nav a.activo{color:var(--verde);text-decoration:underline;text-underline-offset:4px}
-.barra .sp{flex:1}
-.barra .usuario{color:rgba(255,255,255,.7);font-size:13px}
-.barra form{margin:0}
-.barra .link{background:none;border:2px solid rgba(255,255,255,.5);color:var(--blanco);
-  padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
-.barra .link:hover{background:var(--verde);border-color:var(--verde);color:var(--negro)}
+/* Navegación lateral (Back Office): el documento de producto pide
+   explícitamente que no sea "un simple panel administrativo" con barra
+   superior, sino navegación lateral fija. */
+.panel-shell{display:flex;min-height:100vh}
+.sidebar{width:230px;flex:none;background:var(--oscuro);color:var(--blanco);
+  display:flex;flex-direction:column;padding:20px 0}
+.sidebar .marca{display:block;padding:0 20px 20px}
+.sidebar .logo{height:28px;display:block}
+.sidebar nav{display:flex;flex-direction:column;gap:1px;flex:1;overflow-y:auto}
+.sidebar nav a{color:rgba(255,255,255,.75);font-weight:600;font-size:14px;padding:10px 20px;
+  border-left:3px solid transparent}
+.sidebar nav a:hover{background:rgba(255,255,255,.06);color:#fff;text-decoration:none}
+.sidebar nav a.activo{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--azul)}
+.sidebar-pie{padding:16px 20px 4px;margin-top:8px;border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sidebar-pie .usuario{color:rgba(255,255,255,.6);font-size:13px}
+.sidebar-pie form{margin:0}
+.link{background:none;border:1px solid rgba(255,255,255,.3);color:var(--blanco);
+  padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;
+  transition:background .12s,border-color .12s}
+.link:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5)}
 
+/* Barra simple: solo para el login, sin sesión todavía */
+.barra-simple{background:var(--oscuro);padding:14px 24px}
+.barra-simple .logo{height:30px;display:block}
+
+.panel-shell main{flex:1;min-width:0}
 main{max-width:1060px;margin:0 auto;padding:32px 24px}
 
 .cab{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
 
-.btn{display:inline-block;background:var(--verde);color:var(--negro);font-weight:800;
-  padding:11px 18px;border:3px solid var(--negro);border-radius:10px;cursor:pointer;font:inherit;
-  box-shadow:var(--sombra);transition:transform .08s,box-shadow .08s}
-.btn:hover{text-decoration:none;transform:translate(2px,2px);box-shadow:var(--sombra-chica)}
-.btn:active{transform:translate(5px,5px);box-shadow:0 0 0 var(--negro)}
-.btn.danger{background:var(--peligro);color:#fff}
-.cancelar{margin-left:14px;font-weight:700}
+.btn{display:inline-block;background:var(--azul);color:#fff;font-weight:700;
+  padding:11px 18px;border:none;border-radius:10px;cursor:pointer;font:inherit;
+  box-shadow:0 4px 14px rgba(13,92,187,.25);transition:background .12s,box-shadow .12s}
+.btn:hover{text-decoration:none;background:#0a4a99}
+.btn.danger{background:var(--peligro);box-shadow:0 4px 14px rgba(229,72,77,.25)}
+.btn.danger:hover{background:#c73439}
+.cancelar{margin-left:14px;font-weight:700;color:var(--muted)}
 
 /* Métricas: la primera (la más accionable) es la ficha grande y oscura; el
-   resto son fichas parejas con una franja de acento arriba, todo con borde
-   negro grueso y sombra dura. */
+   resto son fichas parejas con una franja de acento arriba. */
 .metricas{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin:8px 0 12px}
-.metrica{position:relative;overflow:hidden;background:var(--blanco);border:3px solid var(--negro);
-  border-radius:12px;padding:18px;box-shadow:var(--sombra)}
-.metrica::before{content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--grad)}
-.metrica .n{display:block;font:800 30px/1 Archivo,sans-serif;color:var(--negro);margin-top:6px}
+.metrica{position:relative;overflow:hidden;background:var(--blanco);border:1px solid var(--borde);
+  border-radius:12px;padding:18px;box-shadow:var(--sombra-chica)}
+.metrica::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--azul)}
+.metrica .n{display:block;font:800 30px/1 Archivo,sans-serif;color:var(--oscuro);margin-top:6px}
 .metrica .t{display:block;font-size:13px;color:var(--muted);margin-top:6px;font-weight:600}
-.metrica.destacada{grid-column:span 2;background:var(--negro);border-color:var(--verde)}
+.metrica.destacada{grid-column:span 2;background:var(--oscuro)}
 .metrica.destacada::before{background:var(--verde)}
 .metrica.destacada .n{color:var(--verde)}
 .metrica.destacada .t{color:rgba(255,255,255,.75)}
 
 .accesos{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.accesos a{display:block;background:var(--blanco);border:3px solid var(--negro);
-  border-radius:10px;padding:16px 18px;color:var(--negro);font-weight:800;box-shadow:var(--sombra);
-  transition:transform .08s,box-shadow .08s}
-.accesos a:hover{transform:translate(3px,3px);box-shadow:0 0 0 var(--negro);text-decoration:none;
-  background:var(--verde)}
+.accesos a{display:block;background:var(--blanco);border:1px solid var(--borde);
+  border-radius:10px;padding:16px 18px;color:var(--oscuro);font-weight:700;box-shadow:var(--sombra-chica);
+  transition:transform .12s,box-shadow .12s}
+.accesos a:hover{transform:translateY(-2px);box-shadow:var(--sombra);text-decoration:none;color:var(--azul)}
 
 /* Tabla: overflow-x es la respuesta a pantallas angostas, no una versión aparte */
-.tabla-wrap{overflow-x:auto;background:var(--blanco);border:3px solid var(--negro);
-  border-radius:12px;box-shadow:var(--sombra)}
+.tabla-wrap{overflow-x:auto;background:var(--blanco);border:1px solid var(--borde);
+  border-radius:12px;box-shadow:var(--sombra-chica)}
 table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:12px 14px;border-bottom:2px solid var(--negro);white-space:nowrap}
-th{background:var(--negro);color:var(--blanco);font-size:11.5px;text-transform:uppercase;
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--borde);white-space:nowrap}
+th{background:#F7F9FC;color:var(--oscuro);font-size:11.5px;text-transform:uppercase;
   letter-spacing:.05em;font-weight:800}
 tbody tr:last-child td{border-bottom:0}
-tbody tr:hover{background:#F4FBEC}
+tbody tr:hover{background:#F7F9FC}
 td.acc{white-space:nowrap;text-align:right}
 td.acc a{margin-left:12px;font-size:13px;font-weight:700}
 td.acc a.del{color:var(--peligro)}
@@ -92,19 +97,19 @@ td.vacio{color:var(--muted);text-align:center;padding:24px;white-space:normal}
 
 /* Formularios */
 .ayuda{max-width:620px;color:var(--muted);font-size:13px;margin:0 0 10px}
-.info-lista{background:var(--blanco);border:2px solid var(--negro);border-left:6px solid var(--verde);
+.info-lista{background:#F0F5FA;border-left:3px solid var(--azul);
   border-radius:8px;color:var(--muted);font-size:13px;padding:12px 16px;margin-bottom:16px;max-width:720px}
 .req{color:var(--peligro);font-weight:800}
-.form{background:var(--blanco);border:3px solid var(--negro);border-radius:12px;
-  padding:22px;max-width:620px;box-shadow:var(--sombra)}
+.form{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:22px;max-width:620px;box-shadow:var(--sombra-chica)}
 .campo{margin-bottom:14px}
 .campo label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}
 .campo input,.campo select,.campo textarea{
-  width:100%;padding:9px 11px;border:2px solid var(--negro);border-radius:8px;
-  font:inherit;background:#fff;color:var(--negro);box-shadow:2px 2px 0 var(--negro)}
+  width:100%;padding:9px 11px;border:1px solid var(--borde);border-radius:8px;
+  font:inherit;background:#fff;color:var(--oscuro)}
 .campo input:focus,.campo select:focus,.campo textarea:focus{
-  outline:none;box-shadow:3px 3px 0 var(--verde)}
-.campo input[type=checkbox]{width:auto;box-shadow:none}
+  outline:none;border-color:var(--azul)}
+.campo input[type=checkbox]{width:auto}
 .pass-wrap{position:relative}
 .pass-wrap input{padding-right:42px}
 .ojito{position:absolute;top:50%;right:6px;transform:translateY(-50%);
@@ -117,14 +122,18 @@ td.vacio{color:var(--muted);text-align:center;padding:24px;white-space:normal}
 /* Login */
 .login{max-width:360px;margin:6vh auto 0}
 .login .form{margin-top:8px}
-.login .err{background:#FDECEC;border:2px solid var(--peligro);color:#a52c30;font-weight:700;
+.login .err{background:#FDECEC;border:1px solid var(--peligro);color:#a52c30;font-weight:700;
   padding:10px 12px;border-radius:8px;font-size:14px}
 
 /* Responsive: celulares y tablets */
 @media (max-width:760px){
-  .barra{padding:10px 16px}
-  .barra .sp{display:none}
-  .barra nav{justify-content:center}
+  .panel-shell{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;align-items:center;padding:10px 16px;gap:12px}
+  .sidebar .marca{padding:0;flex:none}
+  .sidebar nav{flex-direction:row;overflow-x:auto;gap:2px}
+  .sidebar nav a{padding:8px 12px;white-space:nowrap;border-left:none;border-bottom:3px solid transparent}
+  .sidebar nav a.activo{border-left-color:transparent;border-bottom-color:var(--azul)}
+  .sidebar-pie{border-top:none;margin:0;padding:0;flex:none}
   main{padding:20px 14px}
   .metricas,.accesos{grid-template-columns:repeat(2,1fr)}
   .metrica.destacada{grid-column:span 2}

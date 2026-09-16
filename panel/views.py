@@ -55,7 +55,10 @@ def _celda(valor):
 
 class _Base(StaffMixin):
     """`recurso` (dict con model, form_fields, columnas, etiquetas y nombres de
-    URL) lo inyecta `urls.py` vía `as_view(recurso=...)`."""
+    URL) lo inyecta `urls.py` vía `as_view(recurso=...)`. `filtro` (opcional) es
+    un dict de igualdad fija (ej. `{"rol": Empresa.Rol.PROVEEDORA}`) que separa
+    en su propia sección del menú una porción de un modelo ya existente, sin
+    crear un modelo ni una app nueva para eso."""
 
     recurso = None
 
@@ -63,7 +66,7 @@ class _Base(StaffMixin):
         return reverse(self.recurso["url_list"])
 
     def get_queryset(self):
-        qs = self.recurso["model"].objects.all()
+        qs = self.recurso["model"].objects.filter(**self.recurso.get("filtro", {}))
         return qs if qs.ordered else qs.order_by("pk")  # paginación determinista
 
     def get_context_data(self, **kw):
@@ -75,6 +78,19 @@ class _Base(StaffMixin):
 class _ConForm(_Base):
     def get_form_class(self):
         return modelform_factory(self.recurso["model"], fields=self.recurso["form_fields"])
+
+
+class Proximamente(StaffMixin, TemplateView):
+    """Sección del Back Office descrita en el documento de producto pero que
+    todavía no tiene modelo ni CRUD real (fase posterior a la actual)."""
+
+    template_name = "panel/proximamente.html"
+    titulo = None
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        ctx["titulo"] = self.titulo
+        return ctx
 
 
 class Lista(_Base, ListView):
@@ -98,6 +114,11 @@ class Lista(_Base, ListView):
 
 class Crear(_ConForm, CreateView):
     template_name = "panel/form.html"
+
+    def form_valid(self, form):
+        for campo, valor in self.recurso.get("filtro", {}).items():
+            setattr(form.instance, campo, valor)
+        return super().form_valid(form)
 
 
 class Editar(_ConForm, UpdateView):

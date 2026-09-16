@@ -120,12 +120,51 @@ class Empresa(models.Model):
     )
     creada = models.DateTimeField(auto_now_add=True)
 
+    # --- Calificación del proveedor (checklist administrado por MERCANTE365,
+    # nunca autodeclarado por el proveedor — documento de producto, sección 32) --
+    class DocumentacionEstado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        RECIBIDA = "recibida", "Recibida"
+        REVISADA = "revisada", "Revisada"
+
+    CHECKLIST_CALIFICACION = [
+        "chk_info_empresarial", "chk_contacto_revisado", "chk_direccion_registrada",
+        "chk_sitio_web_revisado", "chk_info_comercial_revisada",
+        "chk_producto_info_disponible", "chk_producto_fotos_disponibles",
+        "chk_producto_ficha_tecnica", "chk_producto_marca_identificada",
+        "chk_producto_info_comercial",
+    ]
+
+    chk_info_empresarial = models.BooleanField("Información empresarial revisada", default=False)
+    chk_contacto_revisado = models.BooleanField("Contacto revisado", default=False)
+    chk_direccion_registrada = models.BooleanField("Dirección registrada", default=False)
+    chk_sitio_web_revisado = models.BooleanField("Sitio web revisado", default=False)
+    chk_info_comercial_revisada = models.BooleanField("Información comercial revisada", default=False)
+    chk_producto_info_disponible = models.BooleanField("Producto: información disponible", default=False)
+    chk_producto_fotos_disponibles = models.BooleanField("Producto: fotografías disponibles", default=False)
+    chk_producto_ficha_tecnica = models.BooleanField("Producto: ficha técnica", default=False)
+    chk_producto_marca_identificada = models.BooleanField("Producto: marca identificada", default=False)
+    chk_producto_info_comercial = models.BooleanField("Producto: información comercial", default=False)
+    documentacion_estado = models.CharField(
+        max_length=10, choices=DocumentacionEstado.choices, default=DocumentacionEstado.PENDIENTE,
+    )
+    calificado = models.BooleanField(
+        "Proveedor calificado", default=False,
+        help_text="Solo lo marca MERCANTE365 desde este panel, nunca el proveedor: "
+        "revisá el checklist completo antes de activarlo.",
+    )
+
     class Meta:
         verbose_name = "empresa"
         ordering = ["razon_social"]
 
     def __str__(self):
         return self.nombre_comercial or self.razon_social
+
+    def progreso_checklist(self):
+        total = len(self.CHECKLIST_CALIFICACION)
+        hechos = sum(1 for campo in self.CHECKLIST_CALIFICACION if getattr(self, campo))
+        return f"{hechos}/{total}"
 
 
 class ContactoEmpresa(models.Model):

@@ -1,0 +1,34 @@
+{% extends "web/base.html" %}
+{% block title %}Quiénes somos — MERCANTE365{% endblock %}
+
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="nosotros envoltorio">
+  <div class="nosotros-texto">
+    <div class="col">
+      <h2>Quiénes somos</h2>
+      <p>MERCANTE365 es la plataforma de intermediación comercial entre proveedores
+      chilenos y empresas compradoras de Bolivia. Existimos para achicar la
+      distancia entre los dos mercados: la sociedad que opera la plataforma reside
+      en Chile y trabaja directamente con las empresas compradoras bolivianas en
+      cada requerimiento.</p>
+    </div>
+    <div class="col">
+      <h2>Qué hacemos</h2>
+      <p>Verificamos cada empresa proveedora y cada producto antes de publicarlo,
+      clasificamos los requerimientos que llegan y gestionamos el contacto
+      comercial hasta que la coincidencia queda establecida entre las dos partes.</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="n">{{ stats.proveedores }}</span><span class="t">proveedor{{ stats.proveedores|pluralize:"es" }} verificado{{ stats.proveedores|pluralize }}</span></div>
+    <div class="stat"><span class="n">{{ stats.productos }}</span><span class="t">producto{{ stats.productos|pluralize }} publicado{{ stats.productos|pluralize }}</span></div>
+    <div class="stat"><span class="n">{{ stats.rubros }}</span><span class="t">rubro{{ stats.rubros|pluralize }} disponible{{ stats.rubros|pluralize }}</span></div>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

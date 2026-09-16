@@ -9,25 +9,31 @@
 <link rel="stylesheet" href="{% static 'panel/panel.css' %}">
 </head>
 <body>
-<header class="barra">
-  <div class="barra-top">
+{% if user.is_authenticated %}
+<div class="panel-shell">
+  <aside class="sidebar">
     <a class="marca" href="{% url 'panel:dashboard' %}">
-      <span class="marca-box"><img src="{% static 'web/logo.png' %}" alt="MERCANTE365"></span>
+      <img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365">
     </a>
-    <span class="sp"></span>
-    {% if user.is_authenticated %}
-    <span class="usuario">{{ user.get_username }}</span>
-    <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button class="link">Salir</button></form>
-    {% endif %}
-  </div>
-  {% if user.is_authenticated %}
-  <nav>
-    {% for url_name, etiqueta in panel_nav %}
-    <a href="{% url url_name %}"{% if request.resolver_match.view_name == url_name %} class="activo"{% endif %}>{{ etiqueta|capfirst }}</a>
-    {% endfor %}
-  </nav>
-  {% endif %}
+    <nav>
+      {% for url_name, etiqueta in panel_nav %}
+      <a href="{% url url_name %}"{% if request.resolver_match.view_name == url_name %} class="activo"{% endif %}>{{ etiqueta|capfirst }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-pie">
+      <span class="usuario">{{ user.get_username }}</span>
+      <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button class="link">Salir</button></form>
+    </div>
+  </aside>
+  <main>
+{% else %}
+<header class="barra-simple">
+  <a class="marca" href="{% url 'web:home' %}"><img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365"></a>
 </header>
-<main>{% block contenido %}{% endblock %}</main>
+<main>
+{% endif %}
+{% block contenido %}{% endblock %}
+</main>
+{% if user.is_authenticated %}</div>{% endif %}
 </body>
 </html>

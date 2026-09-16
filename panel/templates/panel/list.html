@@ -3,7 +3,7 @@
 {% block contenido %}
 <div class="cab">
   <h1>{{ recurso.etiqueta_plural|capfirst }}</h1>
-  <a class="btn" href="{% url recurso.url_add %}">Nuevo</a>
+  {% if recurso.url_add %}<a class="btn" href="{% url recurso.url_add %}">Nuevo</a>{% endif %}
 </div>
 
 {% if recurso.descripcion %}<div class="info-lista">{{ recurso.descripcion }}</div>{% endif %}
@@ -19,7 +19,7 @@
       {% for v in fila.valores %}<td>{{ v }}</td>{% endfor %}
       <td class="acc">
         <a href="{% url recurso.url_edit fila.pk %}">Editar</a>
-        <a class="del" href="{% url recurso.url_del fila.pk %}">Eliminar</a>
+        {% if recurso.url_del %}<a class="del" href="{% url recurso.url_del fila.pk %}">Eliminar</a>{% endif %}
       </td>
     </tr>
     {% empty %}
