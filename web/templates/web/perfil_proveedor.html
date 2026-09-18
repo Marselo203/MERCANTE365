@@ -1,0 +1,68 @@
+{% extends "web/base.html" %}
+{% block title %}{{ empresa.nombre_comercial|default:empresa.razon_social }} — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio perfil-proveedor">
+  <nav class="migas">
+    <a href="{% url 'web:market' %}">Catálogo</a>
+  </nav>
+
+  <div class="perfil-cab">
+    <div class="perfil-logo">
+      {% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="{{ empresa.nombre_comercial|default:empresa.razon_social }}">
+      {% else %}<span class="perfil-logo-vacio">{{ empresa.nombre_comercial|default:empresa.razon_social|slice:":1" }}</span>{% endif %}
+    </div>
+    <div>
+      <div class="perfil-distintivos">
+        <span class="distintivo">Registrado</span>
+        {% if empresa.calificado %}<span class="distintivo calificado">✓ Calificado</span>{% endif %}
+      </div>
+      <h1>{{ empresa.nombre_comercial|default:empresa.razon_social }}</h1>
+      <p class="empresa-linea">{{ empresa.ciudad }}, {{ empresa.pais }}</p>
+      {% if empresa.descripcion %}<p class="perfil-descripcion">{{ empresa.descripcion }}</p>{% endif %}
+      {% if categorias %}
+      <div class="chips">
+        {% for cat in categorias %}<span class="chip">{{ cat.nombre }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="perfil-layout">
+    <div>
+      <h2>Productos publicados</h2>
+      <div class="grid">
+        {% for p in productos %}
+        {% include "web/_tarjeta_producto.html" %}
+        {% empty %}
+        <p class="vacio">Este proveedor todavía no tiene productos publicados.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <aside class="perfil-aside">
+      <div class="verificacion-caja">
+        <h3>Información revisada</h3>
+        <p class="ayuda">Solo se marcan los criterios que MERCANTE365 revisó de verdad.</p>
+        <div class="checklist-grupo">
+          <span class="checklist-tit">Empresa</span>
+          {% for etiqueta, hecho in checklist_empresa %}
+          <span class="checklist-item{% if hecho %} ok{% endif %}">{% if hecho %}✓{% else %}○{% endif %} {{ etiqueta }}</span>
+          {% endfor %}
+        </div>
+        <div class="checklist-grupo">
+          <span class="checklist-tit">Producto</span>
+          {% for etiqueta, hecho in checklist_producto %}
+          <span class="checklist-item{% if hecho %} ok{% endif %}">{% if hecho %}✓{% else %}○{% endif %} {{ etiqueta }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

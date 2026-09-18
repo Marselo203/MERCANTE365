@@ -12,6 +12,7 @@ formulario del panel de gestión (ver panel/templates/panel/form.html) — es la
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import slugify
 
 
 # --- Ubicaciones ---------------------------------------------------------------
@@ -113,6 +114,10 @@ class Empresa(models.Model):
     descripcion = models.TextField(
         blank=True, help_text="Texto breve sobre la empresa para su ficha pública (opcional).",
     )
+    logo = models.ImageField(
+        upload_to="empresas/logos/", blank=True,
+        help_text="Logo de la empresa para su perfil público (opcional).",
+    )
 
     estado_verificacion = models.CharField(
         max_length=12, choices=EstadoVerificacion.choices, default=EstadoVerificacion.PENDIENTE,
@@ -154,9 +159,27 @@ class Empresa(models.Model):
         "revisá el checklist completo antes de activarlo.",
     )
 
+    class NivelComercial(models.TextChoices):
+        FREE = "free", "Free"
+        PREMIUM = "premium", "Premium"
+        PREMIUM_PLUS = "premium_plus", "Premium Plus"
+
+    nivel_comercial = models.CharField(
+        max_length=12, choices=NivelComercial.choices, default=NivelComercial.FREE,
+        help_text="Toggle de nivel comercial (documento de producto, sección 52). Por ahora "
+        "solo el toggle: los límites reales de cada nivel (tope de productos, etc.) son un "
+        "módulo aparte todavía no construido. Un proveedor necesita Premium Plus activo para "
+        "poder vincularse a un vendedor de la Red Comercial.",
+    )
+
     class Meta:
         verbose_name = "empresa"
         ordering = ["razon_social"]
+        permissions = [
+            ("gestionar_proveedores", "Puede gestionar proveedores"),
+            ("gestionar_compradores", "Puede gestionar compradores"),
+            ("gestionar_calificacion", "Puede gestionar la calificación de proveedores"),
+        ]
 
     def __str__(self):
         return self.nombre_comercial or self.razon_social
@@ -481,6 +504,81 @@ class EscalaPrecio(models.Model):
         return f"desde {self.volumen_minimo}: {self.precio_unitario} {self.producto.moneda}"
 
 
+class Vendedor(models.Model):
+    """Vendedor independiente de la Red Comercial (documento de producto,
+    sección 64). Recomienda proveedores Premium Plus y gana comisión sobre
+    los requerimientos que llegan con su código de referencia."""
+
+    class Estado(models.TextChoices):
+        ACTIVO = "activo", "Activo"
+        INACTIVO = "inactivo", "Inactivo"
+
+    nombre = models.CharField(max_length=120)
+    whatsapp = models.CharField(max_length=40, blank=True)
+    email = models.EmailField(blank=True)
+    zona = models.CharField(max_length=120, blank=True, help_text="Zona donde opera (ciudad o región).")
+    especialidad = models.CharField(max_length=120, blank=True, help_text="Rubro en el que se especializa.")
+    comision = models.DecimalField(
+        "Comisión (%)", max_digits=5, decimal_places=2, default=0,
+        help_text="Comisión por defecto. Se puede pisar por vinculación individual.",
+    )
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
+    codigo_referencia = models.SlugField(
+        max_length=40, unique=True, blank=True,
+        help_text="Código único para su link de referido (?ref=CÓDIGO). Se genera solo desde "
+        "el nombre si lo dejás vacío.",
+    )
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "vendedor"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+    def save(self, *args, **kw):
+        if not self.codigo_referencia:
+            base = slugify(f"V-{self.nombre}")[:34].upper()
+            codigo, sufijo = base, 1
+            while Vendedor.objects.exclude(pk=self.pk).filter(codigo_referencia=codigo).exists():
+                sufijo += 1
+                codigo = f"{base}{sufijo}"
+            self.codigo_referencia = codigo
+        super().save(*args, **kw)
+
+
+class VendedorProducto(models.Model):
+    """La "vinculación" del documento (sección 65): qué productos de un
+    proveedor Premium Plus puede representar cada vendedor, y con qué
+    comisión. El buscador de productos al vincular ya viene limitado a
+    proveedores con Premium Plus activo desde el formulario del panel
+    (`panel/urls.py`, recurso "vinculacion") — acá no hace falta repetir esa
+    validación porque Django ya rechaza cualquier producto fuera de esa
+    queryset al validar el `ModelChoiceField`."""
+
+    vendedor = models.ForeignKey(Vendedor, on_delete=models.CASCADE, related_name="vinculaciones")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="vendedores")
+    comision = models.DecimalField(
+        "Comisión (%)", max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Dejalo vacío para usar la comisión por defecto del vendedor.",
+    )
+    vinculado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "vinculación de vendedor"
+        verbose_name_plural = "vinculaciones de vendedor"
+        constraints = [
+            models.UniqueConstraint(fields=["vendedor", "producto"], name="vinculacion_unica_por_producto"),
+        ]
+
+    def __str__(self):
+        return f"{self.vendedor} · {self.producto}"
+
+    def comision_efectiva(self):
+        return self.comision if self.comision is not None else self.vendedor.comision
+
+
 class Requerimiento(models.Model):
     """El "Enviar requerimiento" del mockup. Todavía no hay login de empresas
     compradoras en el sitio público, así que el contacto se pide en el propio
@@ -492,9 +590,22 @@ class Requerimiento(models.Model):
         RESPONDIDO = "respondido", "Respondido"
         CERRADO = "cerrado", "Cerrado"
 
+    class Origen(models.TextChoices):
+        ORGANICO = "organico", "Orgánico"
+        VENDEDOR = "vendedor", "Vendedor"
+
     producto = models.ForeignKey(
         Producto, on_delete=models.PROTECT, related_name="requerimientos",
         help_text="Producto sobre el que trata este requerimiento.",
+    )
+    origen = models.CharField(
+        max_length=10, choices=Origen.choices, default=Origen.ORGANICO,
+        help_text="Se completa solo si el visitante llegó con un link de referido "
+        "(?ref=código, documento de producto, secciones 66-67). No lo pisa el comprador.",
+    )
+    vendedor = models.ForeignKey(
+        Vendedor, on_delete=models.SET_NULL, null=True, blank=True, related_name="requerimientos",
+        help_text="Vendedor cuyo código de referencia trajo este requerimiento (si el origen es «Vendedor»).",
     )
 
     nombre_contacto = models.CharField(max_length=120, help_text="Nombre de la persona que envió el requerimiento.")
@@ -521,3 +632,109 @@ class Requerimiento(models.Model):
 
     def __str__(self):
         return f"{self.producto} · {self.nombre_contacto}"
+
+
+class Oportunidad(models.Model):
+    """El pipeline de venta de un lead (documento de producto, sección 70).
+    No se crea sola por cada requerimiento — el staff decide a mano cuáles
+    leads pasan a seguimiento formal de oportunidad."""
+
+    class Estado(models.TextChoices):
+        NUEVA = "nueva", "Nueva"
+        CONTACTADA = "contactada", "Contactada"
+        EN_COTIZACION = "en_cotizacion", "En cotización"
+        EN_NEGOCIACION = "en_negociacion", "En negociación"
+        GANADA = "ganada", "Ganada"
+        PERDIDA = "perdida", "Perdida"
+
+    requerimiento = models.OneToOneField(
+        Requerimiento, on_delete=models.CASCADE, related_name="oportunidad",
+        help_text="El lead del que nace esta oportunidad.",
+    )
+    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.NUEVA)
+    creada = models.DateTimeField(auto_now_add=True)
+    actualizada = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "oportunidad"
+        ordering = ["-actualizada"]
+
+    def __str__(self):
+        return f"{self.requerimiento} · {self.get_estado_display()}"
+
+
+class Venta(models.Model):
+    """"Registrar venta concretada" (sección 71): tanto para una venta que se
+    cerró offline como para dejar constancia de una que se originó acá.
+    Al guardarse por primera vez calcula sola la comisión del vendedor
+    (sección 72), si es que el lead vino atribuido a uno."""
+
+    oportunidad = models.OneToOneField(
+        Oportunidad, on_delete=models.CASCADE, related_name="venta",
+        help_text="Tiene que ser una oportunidad en estado «Ganada».",
+    )
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    comprobante_externo = models.CharField(
+        max_length=120, blank=True,
+        help_text="Número de factura, boleta u otra referencia externa (opcional).",
+    )
+    fecha = models.DateField()
+    observaciones = models.TextField(blank=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "venta"
+        ordering = ["-fecha"]
+
+    def __str__(self):
+        return f"{self.oportunidad.requerimiento.producto} · {self.monto}"
+
+    def save(self, *args, **kw):
+        es_nueva = self.pk is None
+        super().save(*args, **kw)
+        if es_nueva:
+            self._crear_comision_si_corresponde()
+
+    def _crear_comision_si_corresponde(self):
+        vendedor = self.oportunidad.requerimiento.vendedor
+        if not vendedor or hasattr(self, "comision"):
+            return
+        producto = self.oportunidad.requerimiento.producto
+        vinculacion = VendedorProducto.objects.filter(vendedor=vendedor, producto=producto).first()
+        porcentaje = vinculacion.comision_efectiva() if vinculacion else vendedor.comision
+        Comision.objects.create(venta=self, porcentaje=porcentaje, monto=self.monto * porcentaje / 100)
+
+
+class Comision(models.Model):
+    """Documento de producto, sección 73: se calcula sola (`Venta.save()`),
+    acá el staff solo avanza el «Estado» a medida que se confirma y se paga."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        CONFIRMADA = "confirmada", "Confirmada"
+        PAGADA = "pagada", "Pagada"
+
+    venta = models.OneToOneField(Venta, on_delete=models.CASCADE, related_name="comision")
+    porcentaje = models.DecimalField("Porcentaje (%)", max_digits=5, decimal_places=2)
+    monto = models.DecimalField(
+        max_digits=12, decimal_places=2, help_text="Monto de venta × porcentaje. Se calcula solo.",
+    )
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.PENDIENTE)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "comisión"
+        verbose_name_plural = "comisiones"
+        ordering = ["-creada"]
+
+    def __str__(self):
+        return f"{self.venta} · {self.monto}"
+
+    def vendedor(self):
+        return self.venta.oportunidad.requerimiento.vendedor
+
+    def producto(self):
+        return self.venta.oportunidad.requerimiento.producto
+
+    def proveedor(self):
+        return self.producto().empresa

@@ -11,4 +11,5 @@ urlpatterns = [
     path("planes/", views.Planes.as_view(), name="planes"),
     path("market/", views.Market.as_view(), name="market"),
     path("market/<int:pk>/", views.ProductoDetalle.as_view(), name="producto_detalle"),
+    path("proveedores/<slug:slug>/", views.PerfilProveedor.as_view(), name="perfil_proveedor"),
 ]

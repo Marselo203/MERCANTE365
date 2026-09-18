@@ -39,7 +39,7 @@
       <span class="rubro-pill">{{ producto.categoria.nombre }}</span>
       <h1>{{ producto.nombre }}</h1>
       <p class="empresa-linea">
-        {{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}
+        <a href="{% url 'web:perfil_proveedor' producto.empresa.slug %}">{{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}</a>
         · {{ producto.empresa.ciudad }}
         {% if producto.empresa.estado_verificacion == "aprobada" %}<span class="verificado">VERIFICADO</span>{% endif %}
       </p>
@@ -47,10 +47,10 @@
       <div class="precio-grande">{{ producto.moneda }} {{ producto.precio_unitario }}</div>
 
       <dl class="ficha">
-        <div><dt>Pedido mínimo</dt><dd>{{ producto.cantidad_minima_pedido }}{% if producto.unidad_empaque %} · {{ producto.unidad_empaque }}{% endif %}</dd></div>
-        <div><dt>Plazo de despacho</dt><dd>{{ producto.plazo_entrega_dias }} días</dd></div>
-        <div><dt>Stock disponible</dt><dd>{{ producto.stock_disponible }}</dd></div>
-        {% if producto.sku %}<div><dt>SKU</dt><dd>{{ producto.sku }}</dd></div>{% endif %}
+        <div><dt>📦 Pedido mínimo</dt><dd>{{ producto.cantidad_minima_pedido }}{% if producto.unidad_empaque %} · {{ producto.unidad_empaque }}{% endif %}</dd></div>
+        <div><dt>🚚 Plazo de despacho</dt><dd>{{ producto.plazo_entrega_dias }} días</dd></div>
+        <div><dt>📊 Stock disponible</dt><dd>{{ producto.stock_disponible }}</dd></div>
+        {% if producto.sku %}<div><dt>🏷️ SKU</dt><dd>{{ producto.sku }}</dd></div>{% endif %}
       </dl>
 
       {% if producto.descripcion_tecnica %}
@@ -58,7 +58,7 @@
       {% endif %}
 
       {% if atributos_mostrar %}
-      <h3>Especificaciones técnicas</h3>
+      <h3>🔧 Especificaciones técnicas</h3>
       <table class="atributos-tabla">
         {% for etiqueta, valor, unidad in atributos_mostrar %}
         <tr><th>{{ etiqueta }}</th><td>{{ valor }}{% if unidad %} {{ unidad }}{% endif %}</td></tr>
@@ -68,7 +68,7 @@
 
       {% with escalas=producto.escalas_precio.all %}
       {% if escalas %}
-      <h3>Escalas de precio</h3>
+      <h3>💰 Escalas de precio</h3>
       <table class="atributos-tabla">
         {% for e in escalas %}
         <tr><th>Desde {{ e.volumen_minimo }}</th><td>{{ producto.moneda }} {{ e.precio_unitario }}</td></tr>
@@ -78,7 +78,7 @@
       {% endwith %}
 
       <div class="requerimiento-caja">
-        <h3>Enviar requerimiento</h3>
+        <h3>📨 Enviar requerimiento</h3>
         <p>Nuestro equipo de intermediación clasifica tu pedido y presenta la coincidencia con {{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}.</p>
         <p class="ayuda">Los campos con <span class="req">*</span> son obligatorios.</p>
         <form method="post" class="form-requerimiento">
@@ -94,9 +94,6 @@
           <button type="submit" class="btn">Enviar requerimiento</button>
           <p class="nota">Respuesta del equipo de intermediación en 24 a 48 horas hábiles.</p>
         </form>
-        {% if contacto %}
-        <p class="nota">¿Preferís escribir directo? <a href="mailto:{{ contacto.email }}?subject=Consulta sobre {{ producto.nombre }}">{{ contacto.email }}</a></p>
-        {% endif %}
       </div>
     </div>
   </div>

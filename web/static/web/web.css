@@ -118,17 +118,20 @@ a{color:var(--azul);text-decoration:none}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .stat{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:18px;
   text-align:center;box-shadow:var(--sombra-chica)}
+.stat .icono{display:block;font-size:22px;margin-bottom:6px}
 .stat .n{display:block;font:800 30px/1 Archivo,sans-serif;color:var(--azul)}
 .stat .t{display:block;font-size:12.5px;color:var(--muted);margin-top:6px;font-weight:600}
 
-/* Cómo funciona (página aparte): número en pastilla circular */
+/* Cómo funciona (página aparte): ícono grande + número + texto por paso */
 .como-funciona{padding:48px 0 64px}
 .pasos{list-style:none;margin:0;padding:0;display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
-.pasos li{display:flex;gap:14px;align-items:flex-start;background:var(--blanco);border:1px solid var(--borde);
-  border-radius:14px;padding:18px;box-shadow:var(--sombra-chica)}
-.pasos .n{display:flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;
-  border-radius:50%;background:var(--verde);color:#fff;font:800 13px/1 Archivo,sans-serif}
+.pasos li{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--blanco);
+  border:1px solid var(--borde);border-radius:14px;padding:20px;box-shadow:var(--sombra-chica)}
+.pasos .icono{display:flex;align-items:center;justify-content:center;flex:none;width:48px;height:48px;
+  border-radius:12px;background:#F0F5FA;font-size:22px}
+.pasos .n{font:800 11px/1 ui-monospace,Menlo,monospace;color:var(--verde);text-transform:uppercase;letter-spacing:.06em}
+.pasos p{margin:0;color:var(--oscuro);font-size:14px;line-height:1.5}
 
 /* Planes (página aparte) */
 .planes{padding:48px 0 64px}
@@ -251,6 +254,29 @@ a{color:var(--azul);text-decoration:none}
 .mensaje-error{background:#FDECEC;border:1px solid var(--borde);color:#a52c30;font-weight:700;
   padding:12px 14px;border-radius:8px;margin-bottom:16px}
 
+/* Perfil público del proveedor */
+.perfil-proveedor{padding:28px 0 56px}
+.perfil-cab{display:flex;gap:22px;align-items:flex-start;margin-bottom:36px;flex-wrap:wrap}
+.perfil-logo{width:84px;height:84px;flex:none;border-radius:14px;border:1px solid var(--borde);
+  overflow:hidden;display:flex;align-items:center;justify-content:center;background:#F7F9FC}
+.perfil-logo img{width:100%;height:100%;object-fit:cover}
+.perfil-logo-vacio{font:800 30px/1 Archivo,sans-serif;color:var(--azul)}
+.perfil-distintivos{display:flex;gap:8px;margin-bottom:8px}
+.distintivo{font:700 11px/1 ui-monospace,Menlo,monospace;background:#F1F1F1;color:var(--muted);
+  padding:5px 9px;border-radius:5px}
+.distintivo.calificado{background:#124332;color:#4ADE80}
+.perfil-descripcion{color:var(--muted);margin:10px 0 0;max-width:640px}
+.perfil-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:start}
+.perfil-layout h2{font-size:15px;text-transform:uppercase;letter-spacing:.05em;color:var(--oscuro);
+  margin-bottom:18px}
+.perfil-aside{display:flex;flex-direction:column;gap:16px}
+.perfil-aside .verificacion-caja{flex-direction:column;align-items:stretch}
+.checklist-grupo{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.checklist-tit{font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--oscuro)}
+.checklist-item{font-size:13px;color:var(--muted)}
+.checklist-item.ok{color:var(--verde);font-weight:700}
+
 /* Responsive: celulares, tablets y pantallas angostas en general */
 @media (max-width:760px){
   .cab-int{justify-content:space-between;min-height:auto}
@@ -273,6 +299,7 @@ a{color:var(--azul);text-decoration:none}
   .filtros-sidebar{position:static}
   .filtro-rubros{flex-direction:row;overflow-x:auto;gap:6px}
   .filtro-rubro{flex:none;white-space:nowrap}
+  .perfil-layout{grid-template-columns:1fr}
 }
 @media (max-width:480px){
   .envoltorio{padding:0 16px}

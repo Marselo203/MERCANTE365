@@ -34,11 +34,11 @@ class Dashboard(StaffMixin, TemplateView):
         ctx = super().get_context_data(**kw)
         pend = Empresa.EstadoVerificacion.PENDIENTE
         ctx["metricas"] = [
-            ("Requerimientos nuevos", Requerimiento.objects.filter(estado=Requerimiento.Estado.NUEVO).count()),
-            ("Productos publicados", Producto.objects.filter(publicado=True).count()),
-            ("Productos sin verificar", Producto.objects.filter(verificado=False).count()),
-            ("Empresas por verificar", Empresa.objects.filter(estado_verificacion=pend).count()),
-            ("Categorías", Categoria.objects.count()),
+            ("📨", "Requerimientos nuevos", Requerimiento.objects.filter(estado=Requerimiento.Estado.NUEVO).count()),
+            ("📦", "Productos publicados", Producto.objects.filter(publicado=True).count()),
+            ("⚠️", "Productos sin verificar", Producto.objects.filter(verificado=False).count()),
+            ("🏢", "Empresas por verificar", Empresa.objects.filter(estado_verificacion=pend).count()),
+            ("🗂️", "Categorías", Categoria.objects.count()),
         ]
         return ctx
 
@@ -58,9 +58,21 @@ class _Base(StaffMixin):
     URL) lo inyecta `urls.py` vía `as_view(recurso=...)`. `filtro` (opcional) es
     un dict de igualdad fija (ej. `{"rol": Empresa.Rol.PROVEEDORA}`) que separa
     en su propia sección del menú una porción de un modelo ya existente, sin
-    crear un modelo ni una app nueva para eso."""
+    crear un modelo ni una app nueva para eso. `permiso` (opcional): codename
+    completo de un permiso de Django (ej. "catalogo.change_producto" o uno
+    custom como "catalogo.gestionar_calificacion") que gatea las 4 vistas
+    (listar/crear/editar/eliminar) de este recurso — sin él, cualquier staff
+    entra igual que antes (los permisos son opt-in por recurso, no rompen
+    cuentas de staff existentes que no tengan ningún permiso asignado).
+    `request.user.has_perm(...)` siempre da True para superusers."""
 
     recurso = None
+
+    def test_func(self):
+        if not super().test_func():
+            return False
+        permiso = self.recurso.get("permiso") if self.recurso else None
+        return self.request.user.has_perm(permiso) if permiso else True
 
     def get_success_url(self):
         return reverse(self.recurso["url_list"])
@@ -77,7 +89,24 @@ class _Base(StaffMixin):
 
 class _ConForm(_Base):
     def get_form_class(self):
-        return modelform_factory(self.recurso["model"], fields=self.recurso["form_fields"])
+        """`querysets` (opcional en el recurso): dict `{campo: función sin
+        argumentos que devuelve un queryset}` para acotar un `ModelChoiceField`
+        más allá de su default (todo el modelo relacionado) — ej. el
+        "producto" de una vinculación de vendedor solo puede ser de un
+        proveedor Premium Plus (documento de producto, sección 65,
+        "IMPORTANTE"). Django ya rechaza en la validación cualquier valor
+        fuera de esa queryset, no hace falta repetir la regla a mano."""
+        querysets = self.recurso.get("querysets")
+        callback = None
+        if querysets:
+            def callback(db_field, **kw):
+                campo = db_field.formfield(**kw)
+                if campo is not None and db_field.name in querysets:
+                    campo.queryset = querysets[db_field.name]()
+                return campo
+        return modelform_factory(
+            self.recurso["model"], fields=self.recurso["form_fields"], formfield_callback=callback,
+        )
 
 
 class Proximamente(StaffMixin, TemplateView):

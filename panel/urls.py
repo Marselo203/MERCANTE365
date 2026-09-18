@@ -4,12 +4,17 @@ from django.urls import path
 from catalogo.models import (
     AtributoDefinicion,
     Categoria,
+    Comision,
     ContactoEmpresa,
     Empresa,
     EscalaPrecio,
     ImagenProducto,
+    Oportunidad,
     Producto,
     Requerimiento,
+    Vendedor,
+    VendedorProducto,
+    Venta,
 )
 from panel import views
 
@@ -20,7 +25,7 @@ app_name = "panel"
 # `descripcion` = el texto de ayuda que se muestra arriba de esa tabla.
 RECURSOS = [
     {
-        "slug": "producto", "model": Producto,
+        "slug": "producto", "model": Producto, "permiso": "catalogo.change_producto",
         "etiqueta": "producto", "etiqueta_plural": "productos",
         "descripcion": "El catálogo: cada fila es un producto de alguna empresa proveedora. "
         "Marcá «Publicado» para que se vea en el sitio, y «Verificado» cuando confirmaste "
@@ -38,15 +43,15 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "empresa", "model": Empresa,
+        "slug": "empresa", "model": Empresa, "permiso": "catalogo.change_empresa",
         "etiqueta": "empresa", "etiqueta_plural": "empresas",
         "descripcion": "Todas las empresas registradas, proveedoras y compradoras. Una "
         "proveedora recién se muestra como verificada en el catálogo cuando le cambiás el "
         "estado a «Aprobada».",
         "form_fields": [
             "rol", "razon_social", "nombre_comercial", "identificador_tributario",
-            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion",
-            "estado_verificacion",
+            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion", "logo",
+            "estado_verificacion", "nivel_comercial",
         ],
         "columnas": [
             ("razon_social", "Razón social"), ("get_rol_display", "Rol"),
@@ -55,21 +60,24 @@ RECURSOS = [
     },
     {
         "slug": "proveedor", "model": Empresa, "filtro": {"rol": Empresa.Rol.PROVEEDORA},
+        "permiso": "catalogo.gestionar_proveedores",
         "etiqueta": "proveedor", "etiqueta_plural": "proveedores",
         "descripcion": "Solo las empresas proveedoras. Cambiá el estado a «Aprobada» para "
         "que se muestren como verificadas en el catálogo.",
         "form_fields": [
             "razon_social", "nombre_comercial", "identificador_tributario",
-            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion",
-            "estado_verificacion",
+            "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion", "logo",
+            "estado_verificacion", "nivel_comercial",
         ],
         "columnas": [
             ("razon_social", "Razón social"),
-            ("get_estado_verificacion_display", "Verificación"), ("ciudad", "Ciudad"),
+            ("get_estado_verificacion_display", "Verificación"),
+            ("get_nivel_comercial_display", "Nivel"), ("ciudad", "Ciudad"),
         ],
     },
     {
         "slug": "comprador", "model": Empresa, "filtro": {"rol": Empresa.Rol.COMPRADORA},
+        "permiso": "catalogo.gestionar_compradores",
         "etiqueta": "comprador", "etiqueta_plural": "compradores",
         "descripcion": "Las empresas que envían requerimientos desde el catálogo público.",
         "form_fields": [
@@ -82,7 +90,7 @@ RECURSOS = [
     },
     {
         "slug": "calificacion", "model": Empresa, "filtro": {"rol": Empresa.Rol.PROVEEDORA},
-        "sin_alta": True,
+        "sin_alta": True, "permiso": "catalogo.gestionar_calificacion",
         "etiqueta": "calificación de proveedor", "etiqueta_plural": "calificación de proveedores",
         "descripcion": "El proveedor NO puede autodeclararse «calificado»: marcá solo los "
         "criterios que MERCANTE365 revisó de verdad y recién ahí activá «Proveedor "
@@ -101,7 +109,7 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "categoria", "model": Categoria,
+        "slug": "categoria", "model": Categoria, "permiso": "catalogo.change_categoria",
         "etiqueta": "categoría", "etiqueta_plural": "categorías",
         "descripcion": "Los rubros del catálogo, organizados en árbol: una categoría puede "
         "tener subcategorías. Es lo que los visitantes usan para filtrar el catálogo público.",
@@ -110,6 +118,7 @@ RECURSOS = [
     },
     {
         "slug": "atributo", "model": AtributoDefinicion,
+        "permiso": "catalogo.change_atributodefinicion",
         "etiqueta": "definición de atributo", "etiqueta_plural": "definiciones de atributo",
         "descripcion": "Las características técnicas que se piden para los productos de cada "
         "categoría (ej. «puertos» o «velocidad» para switches). Las subcategorías las heredan.",
@@ -123,7 +132,7 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "imagen", "model": ImagenProducto,
+        "slug": "imagen", "model": ImagenProducto, "permiso": "catalogo.change_imagenproducto",
         "etiqueta": "imagen", "etiqueta_plural": "imágenes de producto",
         "descripcion": "Las fotos de cada producto. Marcá una sola como «Principal»: es la "
         "que se muestra primero en el catálogo y en las tarjetas del sitio.",
@@ -134,7 +143,7 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "escala", "model": EscalaPrecio,
+        "slug": "escala", "model": EscalaPrecio, "permiso": "catalogo.change_escalaprecio",
         "etiqueta": "escala de precio", "etiqueta_plural": "escalas de precio",
         "descripcion": "Precios por volumen: a partir de cierta cantidad, un producto puede "
         "tener un precio distinto al de lista.",
@@ -145,7 +154,7 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "contacto", "model": ContactoEmpresa,
+        "slug": "contacto", "model": ContactoEmpresa, "permiso": "catalogo.change_contactoempresa",
         "etiqueta": "contacto", "etiqueta_plural": "contactos de empresa",
         "descripcion": "Las personas de contacto de cada empresa. El contacto marcado como "
         "«Principal» es el que ve el comprador en la ficha del producto.",
@@ -156,17 +165,91 @@ RECURSOS = [
         ],
     },
     {
-        "slug": "requerimiento", "model": Requerimiento,
+        "slug": "requerimiento", "model": Requerimiento, "permiso": "catalogo.change_requerimiento",
         "etiqueta": "requerimiento", "etiqueta_plural": "requerimientos",
         "descripcion": "Los pedidos de información que los compradores enviaron desde el "
-        "catálogo público. Cambiá el «Estado» para llevar el seguimiento de cada uno.",
+        "catálogo público. Cambiá el «Estado» para llevar el seguimiento de cada uno. «Origen» "
+        "y «Vendedor» se completan solos si el comprador llegó con un link de referido de la "
+        "Red Comercial (documento de producto, sección 68, «Bandeja de Leads / RFQ»).",
         "form_fields": [
             "producto", "nombre_contacto", "email_contacto", "telefono_contacto",
-            "empresa_compradora", "volumen_requerido", "plazo_esperado", "observaciones", "estado",
+            "empresa_compradora", "volumen_requerido", "plazo_esperado", "observaciones",
+            "estado", "origen", "vendedor",
         ],
         "columnas": [
             ("producto", "Producto"), ("nombre_contacto", "Contacto"),
-            ("email_contacto", "Email"), ("get_estado_display", "Estado"), ("creado", "Fecha"),
+            ("email_contacto", "Email"), ("get_estado_display", "Estado"),
+            ("get_origen_display", "Origen"), ("vendedor", "Vendedor"), ("creado", "Fecha"),
+        ],
+    },
+    {
+        "slug": "vendedor", "model": Vendedor, "permiso": "catalogo.change_vendedor",
+        "etiqueta": "vendedor", "etiqueta_plural": "vendedores",
+        "descripcion": "Vendedores independientes de la Red Comercial. El «Código de "
+        "referencia» se genera solo si lo dejás vacío — es lo que va en su link "
+        "(mercante365.com/?ref=CÓDIGO) para que sus requerimientos queden atribuidos a él.",
+        "form_fields": [
+            "nombre", "whatsapp", "email", "zona", "especialidad", "comision",
+            "estado", "codigo_referencia",
+        ],
+        "columnas": [
+            ("nombre", "Nombre"), ("zona", "Zona"), ("codigo_referencia", "Código de referencia"),
+            ("comision", "Comisión %"), ("get_estado_display", "Estado"),
+        ],
+    },
+    {
+        "slug": "oportunidad", "model": Oportunidad, "permiso": "catalogo.change_oportunidad",
+        "etiqueta": "oportunidad", "etiqueta_plural": "oportunidades",
+        "descripcion": "El pipeline de venta de un lead (documento de producto, sección 70). "
+        "No se crea sola: elegí a mano qué requerimientos pasan a seguimiento formal.",
+        "form_fields": ["requerimiento", "estado"],
+        "columnas": [
+            ("requerimiento", "Requerimiento"), ("get_estado_display", "Estado"),
+            ("actualizada", "Actualizada"),
+        ],
+    },
+    {
+        "slug": "venta", "model": Venta, "permiso": "catalogo.change_venta",
+        "etiqueta": "venta", "etiqueta_plural": "ventas",
+        "descripcion": "Registrar una venta concretada (documento de producto, sección 71), "
+        "sea que se haya cerrado acá o fuera del sitio. Al guardarla se calcula sola la "
+        "comisión del vendedor si el lead vino atribuido a uno (sección 72).",
+        "form_fields": ["oportunidad", "monto", "comprobante_externo", "fecha", "observaciones"],
+        "querysets": {
+            "oportunidad": lambda: Oportunidad.objects.filter(estado=Oportunidad.Estado.GANADA),
+        },
+        "columnas": [
+            ("oportunidad", "Oportunidad"), ("monto", "Monto"), ("fecha", "Fecha"),
+        ],
+    },
+    {
+        "slug": "comision", "model": Comision, "sin_alta": True,
+        "permiso": "catalogo.change_comision",
+        "etiqueta": "comisión", "etiqueta_plural": "comisiones",
+        "descripcion": "Se calculan solas al registrar una venta (documento de producto, "
+        "sección 73). Acá solo se avanza el «Estado» a medida que se confirma y se paga.",
+        "form_fields": ["estado"],
+        "columnas": [
+            ("vendedor", "Vendedor"), ("producto", "Producto"), ("proveedor", "Proveedor"),
+            ("porcentaje", "%"), ("monto", "Comisión"), ("get_estado_display", "Estado"),
+        ],
+    },
+    {
+        "slug": "vinculacion", "model": VendedorProducto,
+        "permiso": "catalogo.change_vendedorproducto",
+        "etiqueta": "vinculación", "etiqueta_plural": "vinculaciones de vendedor",
+        "descripcion": "Qué productos puede representar cada vendedor y con qué comisión "
+        "(documento de producto, sección 65). El buscador de «Producto» solo muestra productos "
+        "de proveedores con «Premium Plus» activo — es un requisito explícito del documento.",
+        "form_fields": ["vendedor", "producto", "comision"],
+        "querysets": {
+            "producto": lambda: Producto.objects.filter(
+                publicado=True, empresa__nivel_comercial=Empresa.NivelComercial.PREMIUM_PLUS,
+            ),
+        },
+        "columnas": [
+            ("vendedor", "Vendedor"), ("producto", "Producto"),
+            ("comision_efectiva", "Comisión %"), ("vinculado_en", "Vinculado"),
         ],
     },
 ]
@@ -179,10 +262,6 @@ PROXIMAMENTE = [
     ("catalogos", "Catálogos"),
     ("premium", "Premium"),
     ("premium_plus", "Premium Plus"),
-    ("red_comercial", "Red Comercial"),
-    ("oportunidades", "Oportunidades"),
-    ("ventas", "Ventas"),
-    ("comisiones", "Comisiones"),
     ("configuracion", "Configuración"),
 ]
 
@@ -200,11 +279,11 @@ MENU = [
     ("recurso", "calificacion", "Calificación"),
     ("proximamente", "premium"),
     ("proximamente", "premium_plus"),
-    ("proximamente", "red_comercial"),
+    ("recurso", "vendedor", "Red Comercial"),
     ("recurso", "requerimiento", "Leads / RFQ"),
-    ("proximamente", "oportunidades"),
-    ("proximamente", "ventas"),
-    ("proximamente", "comisiones"),
+    ("recurso", "oportunidad", "Oportunidades"),
+    ("recurso", "venta", "Ventas"),
+    ("recurso", "comision", "Comisiones"),
     ("recurso", "comprador"),
     ("proximamente", "configuracion"),
 ]

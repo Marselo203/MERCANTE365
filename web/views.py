@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import FormMixin
 
-from catalogo.models import Categoria, Empresa, Producto
+from catalogo.models import Categoria, Empresa, Producto, Requerimiento, Vendedor
 from web.forms import RequerimientoForm
 
 ORDEN = {
@@ -116,6 +116,41 @@ class Market(TemplateView):
         return ctx
 
 
+class PerfilProveedor(DetailView):
+    """Página pública por proveedor (documento de producto, sección 20).
+    Muestra lo que hay dato real para: logo, descripción, ubicación, rubros,
+    productos publicados y calificación (con el checklist de "información
+    revisada", sección 21). «Marcas», «Mercados atendidos» y «Capacidad de
+    suministro» son campos del módulo Premium que todavía no existe — no se
+    muestran hasta que existan. El contacto de la empresa NO es público: el
+    modelo de negocio es de intermediación, el comprador llega al proveedor
+    solo a través del formulario de requerimiento."""
+
+    model = Empresa
+    slug_url_kwarg = "slug"
+    template_name = "web/perfil_proveedor.html"
+    context_object_name = "empresa"
+
+    def get_queryset(self):
+        return Empresa.objects.filter(rol=Empresa.Rol.PROVEEDORA)
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        empresa = self.object
+        productos = Producto.objects.filter(empresa=empresa, publicado=True).select_related("categoria")
+        ctx["productos"] = productos
+        ctx["categorias"] = sorted({p.categoria for p in productos}, key=lambda c: c.nombre)
+        ctx["checklist_empresa"] = [
+            (empresa._meta.get_field(campo).verbose_name, getattr(empresa, campo))
+            for campo in Empresa.CHECKLIST_CALIFICACION[:5]
+        ]
+        ctx["checklist_producto"] = [
+            (empresa._meta.get_field(campo).verbose_name, getattr(empresa, campo))
+            for campo in Empresa.CHECKLIST_CALIFICACION[5:]
+        ]
+        return ctx
+
+
 class ProductoDetalle(FormMixin, DetailView):
     """Ficha de producto + el "enviar requerimiento" del mockup, en la misma
     página: patrón documentado de Django (FormMixin + DetailView) en vez de
@@ -146,6 +181,13 @@ class ProductoDetalle(FormMixin, DetailView):
     def form_valid(self, form):
         requerimiento = form.save(commit=False)
         requerimiento.producto = self.object
+        codigo = self.request.session.get("ref_vendedor")
+        vendedor = Vendedor.objects.filter(
+            codigo_referencia=codigo, estado=Vendedor.Estado.ACTIVO,
+        ).first() if codigo else None
+        if vendedor:
+            requerimiento.origen = Requerimiento.Origen.VENDEDOR
+            requerimiento.vendedor = vendedor
         requerimiento.save()
         messages.success(
             self.request,

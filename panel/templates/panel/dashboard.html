@@ -4,8 +4,11 @@
 <h1>Panel de gestión</h1>
 
 <div class="metricas">
-  {% for etiqueta, valor in metricas %}
-  <div class="metrica{% if forloop.first %} destacada{% endif %}"><span class="n">{{ valor }}</span><span class="t">{{ etiqueta }}</span></div>
+  {% for icono, etiqueta, valor in metricas %}
+  <div class="metrica{% if forloop.first %} destacada{% endif %}">
+    <span class="icono">{{ icono }}</span>
+    <span class="n">{{ valor }}</span><span class="t">{{ etiqueta }}</span>
+  </div>
   {% endfor %}
 </div>
 
@@ -13,7 +16,7 @@
 <div class="accesos">
   {% for url_name, etiqueta in panel_nav %}
   {% if url_name != "panel:dashboard" %}
-  <a href="{% url url_name %}">{{ etiqueta|capfirst }}</a>
+  <a href="{% url url_name %}">{{ etiqueta|capfirst }}<span class="flecha">→</span></a>
   {% endif %}
   {% endfor %}
 </div>

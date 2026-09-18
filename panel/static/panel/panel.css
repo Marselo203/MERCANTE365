@@ -66,6 +66,7 @@ main{max-width:1060px;margin:0 auto;padding:32px 24px}
 .metrica{position:relative;overflow:hidden;background:var(--blanco);border:1px solid var(--borde);
   border-radius:12px;padding:18px;box-shadow:var(--sombra-chica)}
 .metrica::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--azul)}
+.metrica .icono{display:block;font-size:22px}
 .metrica .n{display:block;font:800 30px/1 Archivo,sans-serif;color:var(--oscuro);margin-top:6px}
 .metrica .t{display:block;font-size:13px;color:var(--muted);margin-top:6px;font-weight:600}
 .metrica.destacada{grid-column:span 2;background:var(--oscuro)}
@@ -74,9 +75,12 @@ main{max-width:1060px;margin:0 auto;padding:32px 24px}
 .metrica.destacada .t{color:rgba(255,255,255,.75)}
 
 .accesos{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.accesos a{display:block;background:var(--blanco);border:1px solid var(--borde);
+.accesos a{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--blanco);border:1px solid var(--borde);
   border-radius:10px;padding:16px 18px;color:var(--oscuro);font-weight:700;box-shadow:var(--sombra-chica);
   transition:transform .12s,box-shadow .12s}
+.accesos a .flecha{color:var(--azul);font-weight:400;transition:transform .12s}
+.accesos a:hover .flecha{transform:translateX(3px)}
 .accesos a:hover{transform:translateY(-2px);box-shadow:var(--sombra);text-decoration:none;color:var(--azul)}
 
 /* Tabla: overflow-x es la respuesta a pantallas angostas, no una versión aparte */
