@@ -266,3 +266,74 @@ class OportunidadesVentasComisiones(TestCase):
     def test_comision_no_tiene_alta_ni_baja(self):
         self.assertEqual(self.client.get("/panel/comision/nuevo/").status_code, 404)
         self.assertEqual(self.client.get("/panel/comision/1/eliminar/").status_code, 404)
+
+
+class GestionDeImagenes(TestCase):
+    """El módulo de fotos de producto funcionando de punta a punta desde el
+    panel: subir una imagen y marcar una nueva como principal no puede
+    tirarle al staff un error de nombre de constraint de base de datos."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from decimal import Decimal
+
+        from catalogo.models import Categoria, Ciudad, Empresa, Pais, Producto, Region
+
+        staff = User.objects.create_user("fotografo", password="x", is_staff=True)
+        staff.groups.add(Group.objects.get(name="Staff completo"))
+
+        cl = Pais.objects.create(codigo_iso="CL", nombre="Chile")
+        reg = Region.objects.create(pais=cl, nombre="RM", slug="rm")
+        ciu = Ciudad.objects.create(region=reg, nombre="Santiago", slug="santiago")
+        cat = Categoria.objects.create(nombre="Redes", slug="redes")
+        emp = Empresa.objects.create(
+            rol=Empresa.Rol.PROVEEDORA, razon_social="ACME", identificador_tributario="1",
+            slug="acme", pais=cl, region=reg, ciudad=ciu,
+        )
+        cls.producto = Producto.objects.create(
+            empresa=emp, categoria=cat, nombre="Switch", slug="switch",
+            precio_unitario=Decimal("100"),
+        )
+
+    def setUp(self):
+        self.client.login(username="fotografo", password="x")
+
+    @staticmethod
+    def _png():
+        import struct
+        import zlib
+
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        def chunk(tag, data):
+            return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data))
+
+        raw = zlib.compress(b"".join(b"\x00\xff\x00\x00" for _ in range(2)))
+        contenido = (
+            b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", raw)
+            + chunk(b"IEND", b"")
+        )
+        return SimpleUploadedFile("foto.png", contenido, content_type="image/png")
+
+    def test_subir_imagen_principal_y_reemplazarla_no_rompe(self):
+        from catalogo.models import ImagenProducto
+
+        r1 = self.client.post("/panel/imagen/nuevo/", {
+            "producto": self.producto.pk, "alt": "Foto 1", "es_principal": "on",
+            "orden": 1, "imagen": self._png(),
+        })
+        self.assertEqual(r1.status_code, 302, r1.context["form"].errors if r1.status_code == 200 else "")
+
+        r2 = self.client.post("/panel/imagen/nuevo/", {
+            "producto": self.producto.pk, "alt": "Foto 2", "es_principal": "on",
+            "orden": 2, "imagen": self._png(),
+        })
+        self.assertEqual(r2.status_code, 302, r2.context["form"].errors if r2.status_code == 200 else "")
+
+        imagenes = list(ImagenProducto.objects.filter(producto=self.producto).order_by("orden"))
+        self.assertEqual(len(imagenes), 2)
+        self.assertFalse(imagenes[0].es_principal)
+        self.assertTrue(imagenes[1].es_principal)
+        self.assertEqual(self.producto.imagen_principal, imagenes[1])

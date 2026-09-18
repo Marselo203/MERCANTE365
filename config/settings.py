@@ -150,6 +150,16 @@ if USAR_OBJECT_STORAGE:
             "file_overwrite": False,
             "querystring_auth": False,
             "default_acl": None,
+            # Opcional: dominio "público" para las URLs que se muestran en el
+            # sitio, si es distinto del endpoint que usa el backend para subir
+            # (ej. en dev, Django le habla a MinIO como "minio:9000" por la
+            # red interna de Docker, pero el navegador necesita "localhost:9000"
+            # para poder cargar la imagen). Vacío/sin setear = se usa el mismo
+            # endpoint para todo, que es lo correcto en producción (OCI ya es
+            # un dominio público real, ahí no hace falta esta variable).
+            "custom_domain": os.environ.get("AWS_S3_CUSTOM_DOMAIN") or None,
+            # MinIO en dev no sirve TLS; OCI en producción sí (default "https:").
+            "url_protocol": os.environ.get("AWS_S3_URL_PROTOCOL", "https:"),
         },
     }
 else:

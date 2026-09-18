@@ -21,6 +21,12 @@ services:
       AWS_SECRET_ACCESS_KEY: minioadmin
       AWS_STORAGE_BUCKET_NAME: b2b-media
       AWS_S3_ENDPOINT_URL: http://minio:9000
+      # "minio:9000" solo existe en la red interna de Docker: le sirve al
+      # contenedor web para subir, pero el navegador (fuera de esa red) no
+      # puede resolver ese hostname. Las URLs que se muestran en el sitio
+      # necesitan el puerto publicado en el host en su lugar.
+      AWS_S3_CUSTOM_DOMAIN: "localhost:9000/b2b-media"
+      AWS_S3_URL_PROTOCOL: "http:"   # MinIO local no sirve TLS
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app                  # autoreload sobre el código del host

@@ -478,6 +478,27 @@ class ImagenProducto(models.Model):
     def __str__(self):
         return f"{self.producto} · imagen {self.pk}"
 
+    def save(self, *args, **kw):
+        # Marcar una imagen como principal desplaza a la anterior en vez de
+        # chocar con la restricción de unicidad — el staff no tiene que
+        # acordarse de desmarcar la vieja a mano en dos pasos.
+        if self.es_principal:
+            ImagenProducto.objects.filter(
+                producto_id=self.producto_id, es_principal=True,
+            ).exclude(pk=self.pk).update(es_principal=False)
+        super().save(*args, **kw)
+
+    def validate_constraints(self, exclude=None):
+        # El `ModelForm` del panel valida constraints ANTES de llamar a
+        # `save()`, así que sin este override el desplazamiento de arriba
+        # nunca llega a correr: la validación ve a la imagen principal
+        # vieja todavía en la base y rechaza el formulario con un error de
+        # nombre de constraint, ilegible para el staff. Esta es la única
+        # constraint del modelo y la garantiza `save()`, así que se salta
+        # acá — sigue existiendo en la base como red de seguridad para
+        # cualquier escritura que no pase por `save()` (ej. `bulk_create`).
+        pass
+
 
 class EscalaPrecio(models.Model):
     producto = models.ForeignKey(

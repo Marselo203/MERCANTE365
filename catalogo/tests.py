@@ -105,10 +105,28 @@ class ImagenPrincipalUnica(TestCase):
             empresa=emp, categoria=cat, nombre="B", slug="b", precio_unitario=Decimal("1"),
         )
 
-    def test_rechaza_dos_principales_en_el_mismo_producto(self):
-        ImagenProducto.objects.create(producto=self.p1, imagen="x.jpg", es_principal=True)
+    def test_marcar_una_nueva_principal_desplaza_a_la_anterior(self):
+        # Antes esto tiraba IntegrityError con el nombre crudo de la
+        # constraint — nada legible para el staff del panel. Ahora la nueva
+        # principal desplaza a la vieja sola, sin que haya que desmarcarla
+        # a mano primero.
+        vieja = ImagenProducto.objects.create(producto=self.p1, imagen="x.jpg", es_principal=True)
+        nueva = ImagenProducto.objects.create(producto=self.p1, imagen="y.jpg", es_principal=True)
+        vieja.refresh_from_db()
+        self.assertFalse(vieja.es_principal)
+        self.assertTrue(nueva.es_principal)
+        self.assertEqual(
+            ImagenProducto.objects.filter(producto=self.p1, es_principal=True).count(), 1,
+        )
+
+    def test_la_constraint_de_base_sigue_como_red_de_seguridad(self):
+        # `validate_constraints` se saltea esta constraint porque `save()` ya
+        # la garantiza — pero la constraint de Postgres en sí sigue ahí para
+        # cualquier escritura que evite `save()` (ej. `.update()` directo).
+        img1 = ImagenProducto.objects.create(producto=self.p1, imagen="x.jpg", es_principal=True)
+        img2 = ImagenProducto.objects.create(producto=self.p1, imagen="y.jpg")
         with self.assertRaises(IntegrityError), transaction.atomic():
-            ImagenProducto.objects.create(producto=self.p1, imagen="y.jpg", es_principal=True)
+            ImagenProducto.objects.filter(pk=img2.pk).update(es_principal=True)
 
     def test_cada_producto_puede_tener_su_principal(self):
         ImagenProducto.objects.create(producto=self.p1, imagen="x.jpg", es_principal=True)
