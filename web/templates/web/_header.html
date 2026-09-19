@@ -9,6 +9,10 @@
       <a href="{% url 'web:planes' %}"{% if request.resolver_match.url_name == 'planes' %} class="activo"{% endif %}>Planes</a>
     </nav>
     <span class="sp"></span>
-    <a class="ingresar" href="{% url 'panel:login' %}">Ingresar</a>
+    {% if request.user.is_authenticated and request.user.empresa %}
+    <a class="ingresar" href="{% url 'web:cuenta_empresa' %}">Mi empresa</a>
+    {% else %}
+    <a class="ingresar" href="{% url 'web:cuenta_login' %}">Ingresar</a>
+    {% endif %}
   </div>
 </header>

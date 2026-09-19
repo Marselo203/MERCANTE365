@@ -15,13 +15,17 @@
     <a class="marca" href="{% url 'panel:dashboard' %}">
       <img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365">
     </a>
+    <div class="sidebar-perfil">
+      <span class="avatar">{{ user.get_username|slice:":1"|upper }}</span>
+      <strong>{{ user.get_full_name|default:user.get_username }}</strong>
+      <span class="rol">{% if user.is_superuser %}Administrador{% else %}Staff MERCANTE365{% endif %}</span>
+    </div>
     <nav>
       {% for url_name, etiqueta in panel_nav %}
       <a href="{% url url_name %}"{% if request.resolver_match.view_name == url_name %} class="activo"{% endif %}>{{ etiqueta|capfirst }}</a>
       {% endfor %}
     </nav>
     <div class="sidebar-pie">
-      <span class="usuario">{{ user.get_username }}</span>
       <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button class="link">Salir</button></form>
     </div>
   </aside>
@@ -31,6 +35,11 @@
   <a class="marca" href="{% url 'web:home' %}"><img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365"></a>
 </header>
 <main>
+{% endif %}
+{% if messages %}
+{% for mensaje in messages %}
+<p class="mensaje-{{ mensaje.tags }}">{{ mensaje }}</p>
+{% endfor %}
 {% endif %}
 {% block contenido %}{% endblock %}
 </main>

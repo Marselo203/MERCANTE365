@@ -29,15 +29,22 @@ h2{font:800 13px/1 Archivo,sans-serif;text-transform:uppercase;letter-spacing:.0
   display:flex;flex-direction:column;padding:20px 0}
 .sidebar .marca{display:block;padding:0 20px 20px}
 .sidebar .logo{height:28px;display:block}
+.sidebar-perfil{display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:4px;padding:4px 20px 22px}
+.sidebar-perfil .avatar{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.1);
+  border:2px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;
+  font:800 20px/1 Archivo,sans-serif;color:#fff;margin-bottom:6px}
+.sidebar-perfil strong{color:#fff;font-size:14px}
+.sidebar-perfil .rol{color:rgba(255,255,255,.55);font-size:12px}
 .sidebar nav{display:flex;flex-direction:column;gap:1px;flex:1;overflow-y:auto}
 .sidebar nav a{color:rgba(255,255,255,.75);font-weight:600;font-size:14px;padding:10px 20px;
   border-left:3px solid transparent}
 .sidebar nav a:hover{background:rgba(255,255,255,.06);color:#fff;text-decoration:none}
 .sidebar nav a.activo{background:rgba(255,255,255,.08);color:#fff;border-left-color:var(--azul)}
 .sidebar-pie{padding:16px 20px 4px;margin-top:8px;border-top:1px solid rgba(255,255,255,.12);
-  display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sidebar-pie .usuario{color:rgba(255,255,255,.6);font-size:13px}
+  display:flex;align-items:center;justify-content:center}
 .sidebar-pie form{margin:0}
+.sidebar-pie .link{width:100%}
 .link{background:none;border:1px solid rgba(255,255,255,.3);color:var(--blanco);
   padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;
   transition:background .12s,border-color .12s}
@@ -82,6 +89,32 @@ main{max-width:1060px;margin:0 auto;padding:32px 24px}
 .accesos a .flecha{color:var(--azul);font-weight:400;transition:transform .12s}
 .accesos a:hover .flecha{transform:translateX(3px)}
 .accesos a:hover{transform:translateY(-2px);box-shadow:var(--sombra);text-decoration:none;color:var(--azul)}
+
+/* Dashboard: gráficos con datos reales (nada de placeholder) */
+.sin-margen{margin:0 0 16px}
+.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:12px}
+.grafico-caja,.anillo-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;
+  padding:20px;box-shadow:var(--sombra-chica)}
+.grafico-cab{display:flex;align-items:center;justify-content:space-between}
+.grafico-barras{width:100%;height:auto;display:block}
+.barra{fill:var(--azul)}
+.barra-valor{font:700 10px ui-monospace,Menlo,monospace;fill:var(--oscuro)}
+.barra-mes{font:600 10px Karla,sans-serif;fill:var(--muted)}
+.barra-eje{stroke:var(--borde);stroke-width:1}
+.anillo-caja{display:flex;flex-direction:column;align-items:center;text-align:center}
+.anillo{width:140px;height:140px;margin:4px auto}
+.anillo-track{fill:none;stroke:var(--borde);stroke-width:9}
+.anillo-valor{fill:none;stroke:var(--verde);stroke-width:9;stroke-linecap:round;transition:stroke-dasharray .3s}
+.anillo-pct{font:800 20px Archivo,sans-serif;fill:var(--oscuro)}
+.anillo-nota{color:var(--muted);font-size:12.5px;margin:8px 0 0}
+
+/* Mensajes (django.contrib.messages) */
+.mensaje-success{background:#F4FAEC;border:1px solid var(--borde);color:#2f5716;font-weight:700;
+  padding:12px 14px;border-radius:8px;margin-bottom:16px}
+.mensaje-warning{background:#FFF7E6;border:1px solid var(--borde);color:#8a5a00;font-weight:700;
+  padding:12px 14px;border-radius:8px;margin-bottom:16px}
+.mensaje-error{background:#FDECEC;border:1px solid var(--borde);color:#a52c30;font-weight:700;
+  padding:12px 14px;border-radius:8px;margin-bottom:16px}
 
 /* Tabla: overflow-x es la respuesta a pantallas angostas, no una versión aparte */
 .tabla-wrap{overflow-x:auto;background:var(--blanco);border:1px solid var(--borde);
@@ -134,6 +167,7 @@ td.vacio{color:var(--muted);text-align:center;padding:24px;white-space:normal}
   .panel-shell{flex-direction:column}
   .sidebar{width:100%;flex-direction:row;align-items:center;padding:10px 16px;gap:12px}
   .sidebar .marca{padding:0;flex:none}
+  .sidebar-perfil{display:none}
   .sidebar nav{flex-direction:row;overflow-x:auto;gap:2px}
   .sidebar nav a{padding:8px 12px;white-space:nowrap;border-left:none;border-bottom:3px solid transparent}
   .sidebar nav a.activo{border-left-color:transparent;border-bottom-color:var(--azul)}
@@ -141,6 +175,7 @@ td.vacio{color:var(--muted);text-align:center;padding:24px;white-space:normal}
   main{padding:20px 14px}
   .metricas,.accesos{grid-template-columns:repeat(2,1fr)}
   .metrica.destacada{grid-column:span 2}
+  .dash-grid{grid-template-columns:1fr}
   th,td{padding:9px 10px}
 }
 @media (max-width:460px){

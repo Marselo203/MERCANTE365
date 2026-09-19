@@ -1,0 +1,53 @@
+{% extends "web/base.html" %}
+{% block title %}Mis productos — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% if messages %}
+  {% for mensaje in messages %}
+  <p class="mensaje-{{ mensaje.tags }}">{{ mensaje }}</p>
+  {% endfor %}
+  {% endif %}
+
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="cuenta-cab">
+    <h1>Mis productos</h1>
+    <a class="btn-azul" href="{% url 'web:cuenta_productos_add' %}">+ Nuevo producto</a>
+  </div>
+
+  <div class="cuenta-uso">
+    {{ activos }} / {{ limite }} productos activos de tu plan
+    <div class="barra"><div class="barra-llena" style="width:{% widthratio activos limite 100 %}%"></div></div>
+  </div>
+
+  <ul class="mis-productos">
+    {% for p in productos %}
+    <li>
+      <span class="nombre">{{ p.nombre }}</span>
+      <span class="estado{% if p.publicado %} publicado{% endif %}">{% if p.publicado %}Publicado{% else %}Borrador{% endif %}</span>
+      <span class="precio">{{ p.moneda }} {{ p.precio_unitario }}</span>
+      <span class="acciones">
+        <a href="{% url 'web:cuenta_productos_edit' p.pk %}">Editar</a>
+        <a class="del" href="{% url 'web:cuenta_productos_del' p.pk %}">Eliminar</a>
+      </span>
+    </li>
+    {% empty %}
+    <p class="vacio">Todavía no tenés productos cargados.</p>
+    {% endfor %}
+  </ul>
+
+  {% if is_paginated %}
+  <div class="pag">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Siguiente ›</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

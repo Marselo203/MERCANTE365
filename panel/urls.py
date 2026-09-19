@@ -28,26 +28,28 @@ RECURSOS = [
         "slug": "producto", "model": Producto, "permiso": "catalogo.change_producto",
         "etiqueta": "producto", "etiqueta_plural": "productos",
         "descripcion": "El catálogo: cada fila es un producto de alguna empresa proveedora. "
-        "Marcá «Publicado» para que se vea en el sitio, y «Verificado» cuando confirmaste "
-        "sus datos con el proveedor.",
+        "Marcá «Publicado» para que se vea en el sitio (respeta el límite de productos activos "
+        "del plan de la empresa), y pasá «Estado de verificación» a Verificado cuando "
+        "confirmaste sus datos con el proveedor — la insignia pública también necesita que la "
+        "empresa tenga plan PYME o superior.",
         "form_fields": [
             "empresa", "categoria", "nombre", "slug", "sku", "descripcion_tecnica",
             "precio_unitario", "moneda", "cantidad_minima_pedido", "unidad_empaque",
             "plazo_entrega_dias", "stock_disponible", "atributos",
-            "verificado", "publicado", "destacado",
+            "estado_verificacion", "publicado", "destacado",
         ],
         "columnas": [
             ("nombre", "Nombre"), ("empresa", "Empresa"), ("categoria", "Categoría"),
             ("precio_unitario", "Precio"), ("publicado", "Publicado"),
-            ("verificado", "Verificado"),
+            ("get_estado_verificacion_display", "Verificación"),
         ],
     },
     {
         "slug": "empresa", "model": Empresa, "permiso": "catalogo.change_empresa",
         "etiqueta": "empresa", "etiqueta_plural": "empresas",
-        "descripcion": "Todas las empresas registradas, proveedoras y compradoras. Una "
-        "proveedora recién se muestra como verificada en el catálogo cuando le cambiás el "
-        "estado a «Aprobada».",
+        "descripcion": "Todas las empresas registradas, proveedoras y compradoras. La insignia "
+        "«Empresa Verificada» se otorga recién cuando le cambiás el estado a «Verificada» — y "
+        "solo se muestra en público si además tiene un plan PYME o superior.",
         "form_fields": [
             "rol", "razon_social", "nombre_comercial", "identificador_tributario",
             "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion", "logo",
@@ -62,8 +64,8 @@ RECURSOS = [
         "slug": "proveedor", "model": Empresa, "filtro": {"rol": Empresa.Rol.PROVEEDORA},
         "permiso": "catalogo.gestionar_proveedores",
         "etiqueta": "proveedor", "etiqueta_plural": "proveedores",
-        "descripcion": "Solo las empresas proveedoras. Cambiá el estado a «Aprobada» para "
-        "que se muestren como verificadas en el catálogo.",
+        "descripcion": "Solo las empresas proveedoras. Cambiá el estado a «Verificada» para "
+        "otorgar la insignia — solo se muestra en público con plan PYME o superior.",
         "form_fields": [
             "razon_social", "nombre_comercial", "identificador_tributario",
             "slug", "pais", "region", "ciudad", "direccion_fisica", "descripcion", "logo",

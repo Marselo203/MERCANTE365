@@ -4,9 +4,18 @@ para desarrollo). CRUD genérico: 4 vistas basadas en clases + un `ModelForm`
 autogenerado, configuradas por recurso desde `urls.py`. Sin dependencias.
 """
 
+import math
+from datetime import date
+
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.forms import modelform_factory
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -17,9 +26,18 @@ from django.views.generic import (
 
 from catalogo.models import Categoria, Empresa, Producto, Requerimiento
 
+MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
+
+@method_decorator(never_cache, name="dispatch")
 class StaffMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Anónimo → login; autenticado sin `is_staff` → 403."""
+    """Anónimo → login; autenticado sin `is_staff` → 403.
+
+    `never_cache` en el `dispatch`: sin esto, el botón "atrás" del navegador
+    después de cerrar sesión puede mostrar una página del panel que quedó en
+    el caché local, aunque el servidor ya no reconozca la sesión — no es un
+    bypass real (una recarga sigue pidiendo login), pero se siente como uno.
+    """
 
     login_url = "panel:login"
 
@@ -27,19 +45,84 @@ class StaffMixin(LoginRequiredMixin, UserPassesTestMixin):
         return self.request.user.is_staff
 
 
+def _ultimos_6_meses():
+    hoy = timezone.now().date().replace(day=1)
+    meses = []
+    y, m = hoy.year, hoy.month
+    for _ in range(6):
+        meses.append((y, m))
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    return list(reversed(meses))
+
+
+def _requerimientos_por_mes():
+    """Barras de "Result" del dashboard: nada de Lorem Ipsum, cuenta real de
+    `Requerimiento.creado` agrupada por mes, con los 6 meses siempre
+    presentes (aunque un mes tenga 0)."""
+    meses = _ultimos_6_meses()
+    desde = date(meses[0][0], meses[0][1], 1)
+    conteos = {
+        (c["mes"].year, c["mes"].month): c["total"]
+        for c in Requerimiento.objects.filter(creado__date__gte=desde)
+        .annotate(mes=TruncMonth("creado"))
+        .values("mes")
+        .annotate(total=Count("id"))
+    }
+    totales = [conteos.get((y, m), 0) for y, m in meses]
+    maximo = max(totales) or 1
+
+    alto_max, base = 100, 130
+    ancho_barra, espacio = 36, 18
+    barras = []
+    for i, ((y, m), total) in enumerate(zip(meses, totales)):
+        alto = round(total / maximo * alto_max) if total else 0
+        barras.append({
+            "x": i * (ancho_barra + espacio),
+            "y": base - alto,
+            "alto": max(alto, 2) if total else 0,
+            "ancho": ancho_barra,
+            "etiqueta": MESES[m - 1],
+            "total": total,
+        })
+    ancho_svg = len(barras) * (ancho_barra + espacio) - espacio
+    return barras, ancho_svg, base
+
+
+def _anillo_verificacion():
+    """Dona de "productos verificados" (equivalente al 45% del mockup, pero
+    con un dato real en vez de uno inventado)."""
+    publicados = Producto.objects.filter(publicado=True).count()
+    verificados = Producto.objects.filter(
+        publicado=True, estado_verificacion=Producto.EstadoVerificacion.VERIFICADO,
+    ).count()
+    pct = round(verificados / publicados * 100) if publicados else 0
+    radio = 42
+    circunferencia = 2 * math.pi * radio
+    return {
+        "pct": pct, "radio": radio, "circunferencia": round(circunferencia, 1),
+        "trazo": round(circunferencia * pct / 100, 1),
+        "verificados": verificados, "publicados": publicados,
+    }
+
+
 class Dashboard(StaffMixin, TemplateView):
     template_name = "panel/dashboard.html"
 
     def get_context_data(self, **kw):
         ctx = super().get_context_data(**kw)
-        pend = Empresa.EstadoVerificacion.PENDIENTE
+        sin_verificar_prod = Producto.EstadoVerificacion.NO_VERIFICADO
+        sin_verificar_emp = Empresa.EstadoVerificacion.NO_VERIFICADA
         ctx["metricas"] = [
             ("📨", "Requerimientos nuevos", Requerimiento.objects.filter(estado=Requerimiento.Estado.NUEVO).count()),
             ("📦", "Productos publicados", Producto.objects.filter(publicado=True).count()),
-            ("⚠️", "Productos sin verificar", Producto.objects.filter(verificado=False).count()),
-            ("🏢", "Empresas por verificar", Empresa.objects.filter(estado_verificacion=pend).count()),
+            ("⚠️", "Productos sin verificar", Producto.objects.filter(estado_verificacion=sin_verificar_prod).count()),
+            ("🏢", "Empresas por verificar", Empresa.objects.filter(estado_verificacion=sin_verificar_emp).count()),
             ("🗂️", "Categorías", Categoria.objects.count()),
         ]
+        ctx["barras"], ctx["barras_ancho"], ctx["barras_base"] = _requerimientos_por_mes()
+        ctx["anillo"] = _anillo_verificacion()
         return ctx
 
 
@@ -152,6 +235,20 @@ class Crear(_ConForm, CreateView):
 
 class Editar(_ConForm, UpdateView):
     template_name = "panel/form.html"
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        # Genérico a propósito: cualquier modelo puede dejar esta marca en su
+        # `save()` (hoy solo `Empresa`, al bajar de nivel comercial) para
+        # avisarle al staff que pasó algo más allá de guardar el cambio.
+        archivados = getattr(form.instance, "_productos_archivados", 0)
+        if archivados:
+            messages.warning(
+                self.request,
+                f"Se desactivaron {archivados} producto{'s' if archivados != 1 else ''} por "
+                "superar el límite del nuevo plan (quedaron guardados, no se borraron).",
+            )
+        return response
 
 
 class Eliminar(_Base, DeleteView):

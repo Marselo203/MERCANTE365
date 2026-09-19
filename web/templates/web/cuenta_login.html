@@ -1,0 +1,30 @@
+{% extends "web/base.html" %}
+{% block title %}Ingresar — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>🔑 Ingresá a tu cuenta</h3>
+    {% if form.non_field_errors %}
+    <p class="mensaje-error">{{ form.non_field_errors|join:" " }}</p>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      {% for campo in form %}
+      <div class="campo">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+        {{ campo }}
+        {{ campo.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn">Ingresar</button>
+      <p class="nota">¿Todavía no tenés cuenta? <a href="{% url 'web:cuenta_registro' %}">Registrá tu empresa</a>.</p>
+    </form>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

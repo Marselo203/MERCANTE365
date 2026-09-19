@@ -1,12 +1,16 @@
 from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.views.generic import TemplateView
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, TemplateView
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import FormMixin
+from django.views.generic.edit import CreateView, DeleteView, FormMixin, FormView, UpdateView
 
 from catalogo.models import Categoria, Empresa, Producto, Requerimiento, Vendedor
-from web.forms import RequerimientoForm
+from web.forms import MiEmpresaForm, MiProductoForm, RegistroProveedorForm, RequerimientoForm
 
 ORDEN = {
     "precio_asc": "precio_unitario",
@@ -34,7 +38,7 @@ class QuienesSomos(TemplateView):
         ctx["stats"] = {
             "proveedores": Empresa.objects.filter(
                 rol=Empresa.Rol.PROVEEDORA,
-                estado_verificacion=Empresa.EstadoVerificacion.APROBADA,
+                estado_verificacion=Empresa.EstadoVerificacion.VERIFICADA,
             ).count(),
             "productos": Producto.objects.filter(publicado=True).count(),
             "rubros": Categoria.objects.filter(padre__isnull=True).count(),
@@ -205,4 +209,135 @@ class ProductoDetalle(FormMixin, DetailView):
             if clave in definiciones
         ]
         ctx["contacto"] = producto.empresa.contactos.filter(es_principal=True).first()
+        return ctx
+
+
+# --- Cuenta de proveedor (autoservicio) -------------------------------------
+# Documento de membresías, sección 19 "Panel del proveedor": por ahora solo
+# proveedoras (no compradoras) y solo "Mi empresa" / "Mis productos" / "Mi
+# membresía" — el resto (Mi Red Comercial, Mis solicitudes, Estadísticas) es
+# alcance futuro, ver memoria del proyecto.
+
+class RegistroProveedor(FormView):
+    """"Regístra tu empresa" (sección 32). Crea la cuenta y la empresa en el
+    mismo paso, siempre en plan Free — no hay pago todavía, así que nadie
+    puede autoasignarse un plan pago acá."""
+
+    template_name = "web/cuenta_registro.html"
+    form_class = RegistroProveedorForm
+    success_url = reverse_lazy("web:cuenta_empresa")
+
+    def dispatch(self, request, *args, **kw):
+        if request.user.is_authenticated:
+            return redirect("web:cuenta_empresa")
+        return super().dispatch(request, *args, **kw)
+
+    def form_valid(self, form):
+        user = form.save()
+        Empresa.objects.create(
+            usuario=user, rol=Empresa.Rol.PROVEEDORA,
+            razon_social=form.cleaned_data["razon_social"],
+            nombre_comercial=form.cleaned_data["nombre_comercial"],
+            identificador_tributario=form.cleaned_data["identificador_tributario"],
+            pais=form.cleaned_data["pais"], region=form.cleaned_data["region"],
+            ciudad=form.cleaned_data["ciudad"],
+        )
+        login(self.request, user)
+        messages.success(self.request, "¡Listo! Tu empresa quedó registrada en el plan Free.")
+        return super().form_valid(form)
+
+
+class ProveedorMixin(LoginRequiredMixin):
+    login_url = "web:cuenta_login"
+
+    def dispatch(self, request, *args, **kw):
+        if request.user.is_authenticated and not hasattr(request.user, "empresa"):
+            messages.error(request, "Esta cuenta no tiene una empresa asociada a este panel.")
+            return redirect("web:home")
+        return super().dispatch(request, *args, **kw)
+
+
+class MiEmpresa(ProveedorMixin, UpdateView):
+    """Lo que el proveedor puede tocar de su propio perfil — nunca su estado
+    de verificación, calificación o nivel comercial (eso lo decide
+    MERCANTE365 desde el panel admin, nunca la propia empresa)."""
+
+    form_class = MiEmpresaForm
+    template_name = "web/cuenta_mi_empresa.html"
+    success_url = reverse_lazy("web:cuenta_empresa")
+
+    def get_object(self, queryset=None):
+        return self.request.user.empresa
+
+    def form_valid(self, form):
+        messages.success(self.request, "Datos actualizados.")
+        return super().form_valid(form)
+
+
+class MisProductosLista(ProveedorMixin, ListView):
+    template_name = "web/cuenta_productos_lista.html"
+    context_object_name = "productos"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return self.request.user.empresa.productos.all().order_by("-creado")
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        empresa = self.request.user.empresa
+        ctx["limite"] = empresa.limite_productos()
+        ctx["activos"] = empresa.productos_activos_count()
+        return ctx
+
+
+class MisProductosCrear(ProveedorMixin, CreateView):
+    form_class = MiProductoForm
+    template_name = "web/cuenta_productos_form.html"
+    success_url = reverse_lazy("web:cuenta_productos")
+
+    def get_form(self, form_class=None):
+        # `empresa` no está en `MiProductoForm` (el proveedor no la elige, es
+        # siempre la suya) — hay que fijarla ACÁ, antes de `is_valid()`, no en
+        # `form_valid()`: para entonces `Producto.clean()` ya corrió con
+        # `empresa_id=None` y el límite de productos del plan nunca se llega
+        # a chequear.
+        form = super().get_form(form_class)
+        form.instance.empresa = self.request.user.empresa
+        return form
+
+    def form_valid(self, form):
+        messages.success(self.request, "Producto creado.")
+        return super().form_valid(form)
+
+
+class MisProductosEditar(ProveedorMixin, UpdateView):
+    form_class = MiProductoForm
+    template_name = "web/cuenta_productos_form.html"
+    success_url = reverse_lazy("web:cuenta_productos")
+
+    def get_queryset(self):
+        return self.request.user.empresa.productos.all()
+
+    def form_valid(self, form):
+        messages.success(self.request, "Producto actualizado.")
+        return super().form_valid(form)
+
+
+class MisProductosEliminar(ProveedorMixin, DeleteView):
+    template_name = "web/cuenta_productos_confirmar.html"
+    success_url = reverse_lazy("web:cuenta_productos")
+
+    def get_queryset(self):
+        return self.request.user.empresa.productos.all()
+
+
+class MiMembresia(ProveedorMixin, TemplateView):
+    template_name = "web/cuenta_membresia.html"
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        empresa = self.request.user.empresa
+        ctx["empresa"] = empresa
+        ctx["activos"] = empresa.productos_activos_count()
+        ctx["limite"] = empresa.limite_productos()
         return ctx

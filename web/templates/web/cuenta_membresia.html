@@ -1,0 +1,35 @@
+{% extends "web/base.html" %}
+{% block title %}Mi membresía — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>💳 Mi membresía</h3>
+    <p>Tu plan actual es <strong>{{ empresa.get_nivel_comercial_display }}</strong>.</p>
+
+    <div class="cuenta-uso">
+      {{ activos }} / {{ limite }} productos activos
+      <div class="barra"><div class="barra-llena" style="width:{% widthratio activos limite 100 %}%"></div></div>
+    </div>
+
+    <dl class="ficha">
+      <div><dt>Empresa Verificada</dt><dd>{% if empresa.es_verificada %}✓ Sí{% else %}Todavía no{% endif %}</dd></div>
+      <div><dt>Proveedor Calificado</dt><dd>{% if empresa.calificado %}✓ Sí{% else %}Todavía no{% endif %}</dd></div>
+      {% if empresa.nivel_comercial == "premium_plus" %}
+      <div><dt>Red Comercial</dt><dd>✓ Habilitada</dd></div>
+      {% endif %}
+    </dl>
+
+    <p class="ayuda">¿Querés más productos activos, la insignia de Empresa Verificada o acceso a la
+    Red Comercial? Mirá el detalle de cada plan y contactanos para actualizar tu membresía.</p>
+    <a class="btn" href="{% url 'web:planes' %}">Ver todos los planes</a>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

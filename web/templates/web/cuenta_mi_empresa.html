@@ -1,0 +1,38 @@
+{% extends "web/base.html" %}
+{% block title %}Mi empresa — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% if messages %}
+  {% for mensaje in messages %}
+  <p class="mensaje-{{ mensaje.tags }}">{{ mensaje }}</p>
+  {% endfor %}
+  {% endif %}
+
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>🏢 Mi empresa</h3>
+    <p class="ayuda">Estos son los datos de tu perfil público. La verificación, la calificación y el
+    plan comercial los administra MERCANTE365 — pedí un cambio desde «Mi membresía».</p>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for campo in form %}
+      <div class="campo">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+        {{ campo }}
+        {% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}
+        {{ campo.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn">Guardar cambios</button>
+    </form>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

@@ -6,38 +6,69 @@
 {% include "web/_header.html" %}
 
 <section class="planes envoltorio">
-  <h2>Planes para empresas proveedoras</h2>
+  <h2>Elige cómo querés crecer con MERCANTE365</h2>
+  <p class="planes-intro">Desde una presencia comercial básica hasta una infraestructura
+  diseñada para desarrollar oportunidades y activar una red comercial. Precios en CLP;
+  el plan anual equivale a pagar 12 meses al precio de 10.</p>
   <div class="planes-grid">
     <div class="plan">
       <div class="nombre">🆓 Free</div>
-      <p class="tagline">Para probar la plataforma</p>
+      <p class="tagline">Entrar — para tener presencia</p>
+      <div class="precio">Gratis</div>
+      <span class="limite">Hasta 3 productos activos</span>
       <ul>
-        <li>Hasta 5 productos publicados</li>
-        <li class="no">Menor visibilidad en el catálogo</li>
-        <li class="no">Dashboard limitado</li>
-        <li class="no">Sin link personalizado</li>
+        <li>Perfil empresarial básico</li>
+        <li>Aparecés en el catálogo y la búsqueda</li>
+        <li class="no">Sin insignia de Empresa Verificada</li>
+        <li class="no">Sin catálogo comercial ni QR</li>
       </ul>
-      <a class="btn-ghost" href="{% url 'panel:login' %}">Empezar gratis</a>
+      <a class="btn-ghost" href="{% url 'panel:login' %}">Registrarme gratis</a>
+    </div>
+    <div class="plan">
+      <div class="nombre">📋 PYME</div>
+      <p class="tagline">Presentarse — presencia profesional</p>
+      <div class="precio">$29.990 <small>/ mes</small></div>
+      <div class="anual">o $299.900 / año</div>
+      <div class="ahorro">Ahorrás $59.980 al año</div>
+      <span class="limite">Hasta 7 productos activos</span>
+      <ul>
+        <li>Perfil empresarial + página comercial con URL propia</li>
+        <li>Catálogo comercial y código QR</li>
+        <li>Podés solicitar la insignia de Empresa/Producto Verificado</li>
+      </ul>
+      <a class="btn-azul" href="{% url 'panel:login' %}">Elegir PYME</a>
     </div>
     <div class="plan destacado">
       <div class="nombre">⭐ Premium</div>
-      <p class="tagline">Para vender en serio</p>
+      <p class="tagline">Crecer — visibilidad e infraestructura comercial</p>
+      <div class="precio">$99.990 <small>/ mes</small></div>
+      <div class="anual">o $999.900 / año</div>
+      <div class="ahorro">Ahorrás $199.980 al año</div>
+      <span class="limite">Hasta 150 productos activos</span>
       <ul>
-        <li>Dashboard completo de la tienda</li>
-        <li>Mayor visibilidad en el catálogo</li>
-        <li>Productos publicados ilimitados</li>
-        <li>Link personalizado de tu vitrina</li>
+        <li>Todo lo de PYME</li>
+        <li>Perfil avanzado, fichas de producto completas</li>
+        <li>Mayor posicionamiento y productos destacados</li>
+        <li>Acceso preferente a oportunidades B2B</li>
       </ul>
-      <a class="btn-azul" href="{% url 'panel:login' %}">Elegir Premium</a>
+      <a class="btn-marino" href="{% url 'panel:login' %}">Elegir Premium</a>
     </div>
     <div class="plan">
-      <div class="nombre">🚀 Premium+</div>
-      <p class="tagline">Para escalar la red comercial</p>
+      <div class="nombre">🚀 Premium Plus</div>
+      <p class="tagline">Vender — visibilidad + fuerza comercial</p>
+      <div class="precio">$249.990 <small>/ mes</small></div>
+      <div class="anual">o $2.499.900 / año</div>
+      <div class="ahorro">Ahorrás $499.980 al año</div>
+      <span class="limite">Hasta 300 productos activos</span>
       <ul>
         <li>Todo lo de Premium</li>
-        <li>Acceso a la red de comerciantes</li>
+        <li>Acceso a la Red Comercial MERCANTE365</li>
+        <li>Podés solicitar activación comercial de tus productos</li>
       </ul>
-      <a class="btn-marino" href="{% url 'panel:login' %}">Elegir Premium+</a>
+      <a class="btn-azul" href="{% url 'panel:login' %}">Elegir Premium Plus</a>
+      <p class="nota-red">Incluye acceso a Red Comercial MERCANTE365. Las operaciones
+      comercializadas por la red están sujetas a una comisión (3%–8%) acordada
+      previamente entre MERCANTE365 y la empresa.</p>
     </div>
   </div>
 </section>

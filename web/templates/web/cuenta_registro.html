@@ -1,0 +1,31 @@
+{% extends "web/base.html" %}
+{% block title %}Registrar empresa — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>📋 Registrá tu empresa</h3>
+    <p class="ayuda">Arrancás en el plan Free (hasta 3 productos activos, sin costo). Podés pedir un
+    upgrade después desde «Mi membresía». Los campos con <span class="req">*</span> son obligatorios.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for campo in form %}
+      <div class="campo">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+        {{ campo }}
+        {% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}
+        {{ campo.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn">Crear mi cuenta</button>
+      <p class="nota">¿Ya tenés cuenta? <a href="{% url 'web:cuenta_login' %}">Ingresá acá</a>.</p>
+    </form>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

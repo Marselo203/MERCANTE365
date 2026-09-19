@@ -22,7 +22,7 @@
     <div class="galeria">
       {% with imagenes=producto.imagenes.all %}
       <div class="foto-grande{% if not imagenes %} sin-foto{% endif %}">
-        {% if producto.verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
+        {% if producto.es_verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
         {% if imagenes %}<img src="{{ imagenes.0.imagen.url }}" alt="{{ imagenes.0.alt|default:producto.nombre }}">{% endif %}
       </div>
       {% if imagenes|length > 1 %}
@@ -41,7 +41,7 @@
       <p class="empresa-linea">
         <a href="{% url 'web:perfil_proveedor' producto.empresa.slug %}">{{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}</a>
         · {{ producto.empresa.ciudad }}
-        {% if producto.empresa.estado_verificacion == "aprobada" %}<span class="verificado">VERIFICADO</span>{% endif %}
+        {% if producto.empresa.es_verificada %}<span class="verificado">✓ EMPRESA VERIFICADA</span>{% endif %}
       </p>
 
       <div class="precio-grande">{{ producto.moneda }} {{ producto.precio_unitario }}</div>

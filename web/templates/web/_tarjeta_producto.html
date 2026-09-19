@@ -1,6 +1,6 @@
 <a class="tarjeta" href="{% url 'web:producto_detalle' p.pk %}">
   <div class="foto">
-    {% if p.verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
+    {% if p.es_verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
     {% with img=p.imagen_principal %}
     {% if img %}<img src="{{ img.imagen.url }}" alt="{{ img.alt|default:p.nombre }}">{% endif %}
     {% endwith %}

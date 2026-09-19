@@ -17,6 +17,7 @@
     <div>
       <div class="perfil-distintivos">
         <span class="distintivo">Registrado</span>
+        {% if empresa.es_verificada %}<span class="distintivo calificado" title="Empresa Verificada MERCANTE365: esta empresa fue revisada por MERCANTE365 conforme a nuestro proceso de verificación empresarial.">✓ Empresa Verificada</span>{% endif %}
         {% if empresa.calificado %}<span class="distintivo calificado">✓ Calificado</span>{% endif %}
       </div>
       <h1>{{ empresa.nombre_comercial|default:empresa.razon_social }}</h1>

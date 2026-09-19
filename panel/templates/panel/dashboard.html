@@ -12,6 +12,34 @@
   {% endfor %}
 </div>
 
+<div class="dash-grid">
+  <div class="grafico-caja">
+    <div class="grafico-cab">
+      <h2 class="sin-margen">Requerimientos por mes</h2>
+    </div>
+    <svg class="grafico-barras" viewBox="0 0 {{ barras_ancho }} 158" preserveAspectRatio="xMidYMid meet">
+      <line x1="0" y1="{{ barras_base }}" x2="{{ barras_ancho }}" y2="{{ barras_base }}" class="barra-eje"/>
+      {% for b in barras %}
+      {% if b.total %}<text x="{{ b.x|add:18 }}" y="{{ b.y|add:-8 }}" class="barra-valor" text-anchor="middle">{{ b.total }}</text>{% endif %}
+      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.ancho }}" height="{{ b.alto }}" rx="6" class="barra"/>
+      <text x="{{ b.x|add:18 }}" y="{{ barras_base|add:20 }}" class="barra-mes" text-anchor="middle">{{ b.etiqueta }}</text>
+      {% endfor %}
+    </svg>
+  </div>
+
+  <div class="anillo-caja">
+    <h2 class="sin-margen">Productos verificados</h2>
+    <svg viewBox="0 0 100 100" class="anillo">
+      <circle cx="50" cy="50" r="{{ anillo.radio }}" class="anillo-track"/>
+      <circle cx="50" cy="50" r="{{ anillo.radio }}" class="anillo-valor"
+        stroke-dasharray="{{ anillo.trazo }} {{ anillo.circunferencia }}"
+        transform="rotate(-90 50 50)"/>
+      <text x="50" y="56" text-anchor="middle" class="anillo-pct">{{ anillo.pct }}%</text>
+    </svg>
+    <p class="anillo-nota">{{ anillo.verificados }} de {{ anillo.publicados }} productos publicados</p>
+  </div>
+</div>
+
 <h2>Catálogo</h2>
 <div class="accesos">
   {% for url_name, etiqueta in panel_nav %}

@@ -1,0 +1,23 @@
+{% extends "web/base.html" %}
+{% block title %}Eliminar producto — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>🗑️ Eliminar producto</h3>
+    <p>¿Eliminar <strong>{{ object }}</strong>? Esta acción no se puede deshacer.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn danger">Sí, eliminar</button>
+      <a class="nota" href="{% url 'web:cuenta_productos' %}">Cancelar</a>
+    </form>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

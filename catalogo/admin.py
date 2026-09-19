@@ -115,10 +115,10 @@ class AtributoDefinicionAdmin(admin.ModelAdmin):
 class ProductoAdmin(admin.ModelAdmin):
     list_display = [
         "nombre", "empresa", "categoria", "precio_unitario", "moneda",
-        "stock_disponible", "publicado", "verificado", "destacado",
+        "stock_disponible", "publicado", "estado_verificacion", "destacado",
     ]
-    list_editable = ["publicado", "verificado", "destacado"]
-    list_filter = ["publicado", "verificado", "destacado", "moneda", "categoria", "empresa"]
+    list_editable = ["publicado", "estado_verificacion", "destacado"]
+    list_filter = ["publicado", "estado_verificacion", "destacado", "moneda", "categoria", "empresa"]
     search_fields = ["nombre", "sku", "slug", "empresa__razon_social"]
     list_select_related = ["empresa", "categoria"]
     autocomplete_fields = ["empresa", "categoria"]

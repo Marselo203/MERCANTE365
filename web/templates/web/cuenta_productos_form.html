@@ -1,0 +1,33 @@
+{% extends "web/base.html" %}
+{% block title %}{% if object %}Editar producto{% else %}Nuevo producto{% endif %} — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>{% if object %}✏️ Editar producto{% else %}➕ Nuevo producto{% endif %}</h3>
+    <p class="ayuda">La verificación y el destacado los decide MERCANTE365 — no aparecen acá. Los
+    campos con <span class="req">*</span> son obligatorios.</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for campo in form %}
+      <div class="campo">
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} <span class="req">*</span>{% endif %}</label>
+        {{ campo }}
+        {% if campo.help_text %}<small>{{ campo.help_text }}</small>{% endif %}
+        {{ campo.errors }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn">Guardar</button>
+      <a class="nota" href="{% url 'web:cuenta_productos' %}">Cancelar</a>
+    </form>
+  </div>
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

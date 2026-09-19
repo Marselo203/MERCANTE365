@@ -51,6 +51,8 @@ a{color:var(--azul);text-decoration:none}
   padding:14px 26px;border:none;border-radius:10px;box-shadow:0 4px 14px rgba(13,92,187,.28);
   transition:background .12s,box-shadow .12s;cursor:pointer}
 .btn:hover{color:#fff;text-decoration:none;background:#0a4a99}
+.btn.danger{background:#E5484D;box-shadow:0 4px 14px rgba(229,72,77,.25)}
+.btn.danger:hover{background:#c73439}
 
 .btn-azul,.btn-marino,.btn-ghost{display:inline-block;font-weight:700;padding:14px 26px;
   border-radius:10px;border:none;transition:transform .08s,box-shadow .08s,background .12s;cursor:pointer}
@@ -135,17 +137,25 @@ a{color:var(--azul);text-decoration:none}
 
 /* Planes (página aparte) */
 .planes{padding:48px 0 64px}
+.planes-intro{max-width:640px;color:var(--muted);margin:-4px 0 28px}
 .planes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
 .plan{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:26px;
   box-shadow:var(--sombra-chica);display:flex;flex-direction:column}
 .plan.destacado{border-color:var(--azul);box-shadow:var(--sombra)}
 .plan .nombre{font:800 20px/1 Archivo,sans-serif;margin-bottom:4px}
-.plan .tagline{color:var(--muted);font-size:13px;margin-bottom:18px}
+.plan .tagline{color:var(--muted);font-size:13px;margin-bottom:16px}
+.plan .precio{font:800 26px/1 Archivo,sans-serif;color:var(--oscuro);margin-bottom:2px}
+.plan .precio small{font:600 13px/1 Karla,sans-serif;color:var(--muted)}
+.plan .anual{font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.plan .ahorro{font-size:12px;color:var(--verde);font-weight:700;margin-bottom:14px}
+.plan .limite{display:inline-block;background:#F0F5FA;color:var(--azul);font-size:12px;
+  font-weight:700;padding:4px 10px;border-radius:20px;margin-bottom:16px}
 .plan ul{list-style:none;margin:0 0 22px;padding:0;display:flex;flex-direction:column;gap:10px;flex:1}
 .plan li{font-size:14px;display:flex;gap:8px;align-items:flex-start}
 .plan li::before{content:"✓";color:var(--verde);font-weight:800;flex:none}
 .plan li.no::before{content:"–";color:var(--muted)}
 .plan li.no{color:var(--muted)}
+.plan .nota-red{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
 
 /* Footer */
 .pie{background:var(--oscuro);color:rgba(255,255,255,.72);padding:36px 0;border-top:1px solid rgba(255,255,255,.08)}
@@ -244,11 +254,42 @@ a{color:var(--azul);text-decoration:none}
 .ayuda{color:var(--muted);font-size:13px;margin:0 0 10px}
 .campo{margin-bottom:14px}
 .campo label{display:block;font-weight:800;font-size:13px;margin-bottom:5px}
-.campo input,.campo textarea{width:100%;padding:9px 11px;border:1px solid var(--borde);
+.campo input,.campo textarea,.campo select{width:100%;padding:9px 11px;border:1px solid var(--borde);
   border-radius:8px;font:inherit;background:#fff;color:var(--oscuro)}
-.campo input:focus,.campo textarea:focus{outline:none;border-color:var(--azul)}
+.campo input:focus,.campo textarea:focus,.campo select:focus{outline:none;border-color:var(--azul)}
+.campo input[type=checkbox]{width:auto}
+.campo small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
 .campo .errorlist{color:#E5484D;font-weight:700;font-size:13px;margin:6px 0 0;padding-left:18px;list-style:none}
 .form-requerimiento .btn{width:100%;text-align:center;cursor:pointer;margin-top:4px}
+.nota{font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.cuenta-caja{max-width:520px;margin:0 auto}
+
+/* Cuenta de proveedor (autoservicio) */
+.cuenta-nav{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:28px;
+  padding-bottom:14px;border-bottom:1px solid var(--borde)}
+.cuenta-nav a{font-weight:700;font-size:14px;color:var(--muted)}
+.cuenta-nav a:hover{color:var(--azul);text-decoration:none}
+.cuenta-nav a.activo{color:var(--azul);text-decoration:underline;text-underline-offset:4px}
+.cuenta-nav form{margin:0}
+.cuenta-salir{background:none;border:1px solid var(--borde);color:var(--muted);
+  padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700}
+.cuenta-salir:hover{border-color:var(--azul);color:var(--azul)}
+.cuenta-uso{background:#F0F5FA;border-radius:10px;padding:14px 16px;margin-bottom:20px;
+  font-size:13.5px;color:var(--oscuro);font-weight:600}
+.cuenta-uso .barra{background:var(--borde);border-radius:20px;height:8px;margin-top:8px;overflow:hidden}
+.cuenta-uso .barra-llena{background:var(--azul);height:100%;border-radius:20px}
+.cuenta-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  margin-bottom:16px;flex-wrap:wrap}
+.mis-productos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.mis-productos li{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--blanco);
+  border:1px solid var(--borde);border-radius:10px;padding:14px 16px;box-shadow:var(--sombra-chica)}
+.mis-productos .nombre{font-weight:700;flex:1;min-width:160px}
+.mis-productos .precio{font-weight:700;color:var(--oscuro)}
+.mis-productos .estado{font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:20px;
+  background:#F1F1F1;color:var(--muted)}
+.mis-productos .estado.publicado{background:#F4FAEC;color:#2f5716}
+.mis-productos .acciones a{font-weight:700;font-size:13px;margin-left:12px}
+.mis-productos .acciones .del{color:#E5484D}
 .mensaje-success{background:#F4FAEC;border:1px solid var(--borde);color:#2f5716;font-weight:700;
   padding:12px 14px;border-radius:8px;margin-bottom:16px}
 .mensaje-error{background:#FDECEC;border:1px solid var(--borde);color:#a52c30;font-weight:700;

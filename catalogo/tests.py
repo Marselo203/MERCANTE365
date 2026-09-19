@@ -136,6 +136,105 @@ class ImagenPrincipalUnica(TestCase):
         ImagenProducto.objects.create(producto=self.p1, imagen="w.jpg", orden=2)
 
 
+class LimiteDeProductosPorNivel(TestCase):
+    """Documento de membresías, secciones 15-16: el límite de productos
+    activos se impide técnicamente, y bajar de nivel archiva (no borra) los
+    excedentes."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cl = Pais.objects.create(codigo_iso="CL", nombre="Chile")
+        reg = Region.objects.create(pais=cl, nombre="RM", slug="rm")
+        ciu = Ciudad.objects.create(region=reg, nombre="Santiago", slug="santiago")
+        cls.cat = Categoria.objects.create(nombre="Ferretería", slug="ferreteria")
+        cls.empresa = Empresa.objects.create(
+            rol=Empresa.Rol.PROVEEDORA, razon_social="Free SA", identificador_tributario="1",
+            slug="free-sa", pais=cl, region=reg, ciudad=ciu,
+        )  # nivel_comercial por default: FREE (límite 3)
+
+    def _producto(self, slug, publicado=True):
+        return Producto.objects.create(
+            empresa=self.empresa, categoria=self.cat, nombre=slug, slug=slug,
+            precio_unitario=Decimal("1"), publicado=publicado,
+        )
+
+    def test_free_no_puede_publicar_un_cuarto_producto(self):
+        for i in range(3):
+            self._producto(f"prod-{i}")
+        cuarto = Producto(
+            empresa=self.empresa, categoria=self.cat, nombre="prod-4", slug="prod-4",
+            precio_unitario=Decimal("1"), publicado=True,
+        )
+        with self.assertRaises(ValidationError):
+            cuarto.full_clean()
+
+    def test_free_si_puede_guardar_el_cuarto_como_borrador(self):
+        for i in range(3):
+            self._producto(f"prod-{i}")
+        borrador = Producto(
+            empresa=self.empresa, categoria=self.cat, nombre="prod-4", slug="prod-4",
+            precio_unitario=Decimal("1"), publicado=False,
+        )
+        borrador.full_clean()  # no debe tirar ValidationError
+
+    def test_bajar_de_nivel_archiva_los_mas_nuevos_sin_borrarlos(self):
+        self.empresa.nivel_comercial = Empresa.NivelComercial.PREMIUM
+        self.empresa.save()
+        productos = [self._producto(f"prod-{i}") for i in range(5)]  # PREMIUM: hasta 150
+
+        self.empresa.nivel_comercial = Empresa.NivelComercial.FREE  # límite 3
+        self.empresa.save()
+
+        self.assertEqual(self.empresa._productos_archivados, 2)
+        self.assertEqual(Producto.objects.filter(empresa=self.empresa).count(), 5)  # nada se borró
+        activos = set(Producto.objects.filter(empresa=self.empresa, publicado=True).values_list("slug", flat=True))
+        self.assertEqual(activos, {"prod-0", "prod-1", "prod-2"})  # los más viejos quedan activos
+
+    def test_subir_de_nivel_no_archiva_nada(self):
+        self.empresa.nivel_comercial = Empresa.NivelComercial.PREMIUM
+        self.empresa.save()
+        self.assertEqual(self.empresa._productos_archivados, 0)
+
+
+class InsigniasDeVerificacion(TestCase):
+    """Documento de membresías, secciones 10.5-10.12: «Empresa Verificada» y
+    «Producto Verificado» necesitan el estado en Verificada/o Y que la
+    empresa tenga plan PYME o superior — ninguna de las dos solas alcanza."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cl = Pais.objects.create(codigo_iso="CL", nombre="Chile")
+        reg = Region.objects.create(pais=cl, nombre="RM", slug="rm")
+        ciu = Ciudad.objects.create(region=reg, nombre="Santiago", slug="santiago")
+        cls.cat = Categoria.objects.create(nombre="Ferretería", slug="ferreteria")
+        cls.empresa = Empresa.objects.create(
+            rol=Empresa.Rol.PROVEEDORA, razon_social="Free SA", identificador_tributario="1",
+            slug="free-sa", pais=cl, region=reg, ciudad=ciu,
+            estado_verificacion=Empresa.EstadoVerificacion.VERIFICADA,  # nivel sigue FREE
+        )
+        cls.producto = Producto.objects.create(
+            empresa=cls.empresa, categoria=cls.cat, nombre="Tornillo", slug="tornillo",
+            precio_unitario=Decimal("1"), publicado=True,
+            estado_verificacion=Producto.EstadoVerificacion.VERIFICADO,
+        )
+
+    def test_estado_verificada_en_free_no_muestra_la_insignia(self):
+        self.assertFalse(self.empresa.es_verificada)
+        self.assertFalse(self.producto.es_verificado)  # depende del nivel de su empresa también
+
+    def test_pyme_verificada_si_muestra_la_insignia(self):
+        self.empresa.nivel_comercial = Empresa.NivelComercial.PYME
+        self.empresa.save()
+        self.assertTrue(self.empresa.es_verificada)
+        self.assertTrue(self.producto.es_verificado)
+
+    def test_nivel_correcto_pero_estado_no_verificada_no_muestra_nada(self):
+        self.empresa.nivel_comercial = Empresa.NivelComercial.PREMIUM
+        self.empresa.estado_verificacion = Empresa.EstadoVerificacion.NO_VERIFICADA
+        self.empresa.save()
+        self.assertFalse(self.empresa.es_verificada)
+
+
 class AdminCargaSinErrores(TestCase):
     """Atrapa lo que `manage.py check` no ve: errores al renderizar
     (autocomplete mal configurado, list_display inválido, métodos que revientan)."""

@@ -10,6 +10,7 @@ formulario del panel de gestión (ver panel/templates/panel/form.html) — es la
 única fuente, no hay textos duplicados en las plantillas.
 """
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
@@ -72,9 +73,19 @@ class Empresa(models.Model):
         COMPRADORA = "compradora", "Compradora"
 
     class EstadoVerificacion(models.TextChoices):
-        PENDIENTE = "pendiente", "Pendiente"
-        APROBADA = "aprobada", "Aprobada"
-        RECHAZADA = "rechazada", "Rechazada"
+        """Insignia pública «Empresa Verificada» (documento de membresías,
+        secciones 10.5-10.8) — antes tenía solo 3 estados (Pendiente/Aprobada/
+        Rechazada), ahora son los 5 del documento. No confundir con
+        `calificado`/el checklist de Calificación: esta insignia reusa esa
+        misma tarea de revisión ya hecha (legalidad, contacto, documentación)
+        como su evidencia, no duplica un segundo checklist idéntico — el
+        estado de acá es el veredicto final que decide el admin, informado
+        por ese checklist."""
+        NO_VERIFICADA = "no_verificada", "No verificada"
+        EN_REVISION = "en_revision", "En revisión"
+        VERIFICADA = "verificada", "Verificada"
+        OBSERVADA = "observada", "Observada"
+        SUSPENDIDA = "suspendida", "Suspendida"
 
     rol = models.CharField(
         max_length=12, choices=Rol.choices,
@@ -92,8 +103,15 @@ class Empresa(models.Model):
         max_length=32, help_text="RUT (Chile) o NIT (Bolivia) de la empresa, sin puntos ni guiones.",
     )
     slug = models.SlugField(
-        max_length=140, unique=True,
-        help_text="Parte de la URL pública de la empresa. Minúsculas y guiones, sin espacios ni tildes.",
+        max_length=140, unique=True, blank=True,
+        help_text="Parte de la URL pública de la empresa. Minúsculas y guiones, sin espacios ni tildes. "
+        "Se genera solo desde la razón social si lo dejás vacío.",
+    )
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="empresa",
+        help_text="La cuenta con la que esta empresa entra a su panel de autoservicio "
+        "(solo proveedoras, por ahora). Vacío para empresas cargadas desde el back office.",
     )
 
     pais = models.ForeignKey(
@@ -120,8 +138,10 @@ class Empresa(models.Model):
     )
 
     estado_verificacion = models.CharField(
-        max_length=12, choices=EstadoVerificacion.choices, default=EstadoVerificacion.PENDIENTE,
-        help_text="Pasala a Aprobada recién cuando confirmaste sus datos. Mientras esté Pendiente no se muestra como verificada.",
+        max_length=15, choices=EstadoVerificacion.choices, default=EstadoVerificacion.NO_VERIFICADA,
+        help_text="Pasala a Verificada recién cuando MERCANTE365 completó la revisión — nunca se "
+        "otorga automáticamente por contratar una membresía. La insignia pública solo se muestra "
+        "si además el plan es PYME o superior (en Free no aplica).",
     )
     creada = models.DateTimeField(auto_now_add=True)
 
@@ -161,15 +181,31 @@ class Empresa(models.Model):
 
     class NivelComercial(models.TextChoices):
         FREE = "free", "Free"
+        PYME = "pyme", "PYME"
         PREMIUM = "premium", "Premium"
         PREMIUM_PLUS = "premium_plus", "Premium Plus"
 
+    # Documento "Especificación funcional para configuración de membresías",
+    # secciones 2 y 15: límite de productos ACTIVOS (=publicados) por nivel,
+    # y su orden para poder detectar un downgrade. Todavía sin pagos ni panel
+    # de autoservicio (prioridad 1 del documento, fuera de este alcance): el
+    # admin cambia el nivel a mano desde el panel, como ya hace con la
+    # verificación.
+    LIMITE_PRODUCTOS = {
+        NivelComercial.FREE: 3, NivelComercial.PYME: 7,
+        NivelComercial.PREMIUM: 150, NivelComercial.PREMIUM_PLUS: 300,
+    }
+    ORDEN_NIVEL = {
+        NivelComercial.FREE: 0, NivelComercial.PYME: 1,
+        NivelComercial.PREMIUM: 2, NivelComercial.PREMIUM_PLUS: 3,
+    }
+
     nivel_comercial = models.CharField(
         max_length=12, choices=NivelComercial.choices, default=NivelComercial.FREE,
-        help_text="Toggle de nivel comercial (documento de producto, sección 52). Por ahora "
-        "solo el toggle: los límites reales de cada nivel (tope de productos, etc.) son un "
-        "módulo aparte todavía no construido. Un proveedor necesita Premium Plus activo para "
-        "poder vincularse a un vendedor de la Red Comercial.",
+        help_text="Define cuántos productos activos puede tener esta empresa (Free 3 · PYME 7 · "
+        "Premium 150 · Premium Plus 300). Si la bajás y tiene más productos publicados que el "
+        "nuevo límite, los más nuevos se desactivan solos (quedan guardados, no se borran). "
+        "Premium Plus además habilita vincularse a un vendedor de la Red Comercial.",
     )
 
     class Meta:
@@ -188,6 +224,55 @@ class Empresa(models.Model):
         total = len(self.CHECKLIST_CALIFICACION)
         hechos = sum(1 for campo in self.CHECKLIST_CALIFICACION if getattr(self, campo))
         return f"{hechos}/{total}"
+
+    def limite_productos(self):
+        return self.LIMITE_PRODUCTOS[self.nivel_comercial]
+
+    @property
+    def es_verificada(self):
+        """Insignia pública «✓ Empresa Verificada» — requiere el estado Y el
+        plan PYME o superior (documento de membresías, sección 10.5)."""
+        return (
+            self.estado_verificacion == self.EstadoVerificacion.VERIFICADA
+            and self.nivel_comercial != self.NivelComercial.FREE
+        )
+
+    def productos_activos_count(self):
+        return self.productos.filter(publicado=True).count()
+
+    def save(self, *args, **kw):
+        if not self.slug:
+            base = slugify(self.razon_social)[:130]
+            slug, sufijo = base, 1
+            while Empresa.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+                sufijo += 1
+                slug = f"{base}-{sufijo}"
+            self.slug = slug
+
+        bajo_de_nivel = False
+        if self.pk:
+            nivel_anterior = Empresa.objects.filter(pk=self.pk).values_list(
+                "nivel_comercial", flat=True
+            ).first()
+            if nivel_anterior and self.ORDEN_NIVEL[nivel_anterior] > self.ORDEN_NIVEL[self.nivel_comercial]:
+                bajo_de_nivel = True
+        super().save(*args, **kw)
+        self._productos_archivados = 0
+        if bajo_de_nivel:
+            self._productos_archivados = self._archivar_productos_excedentes()
+
+    def _archivar_productos_excedentes(self):
+        """Al bajar de nivel, los productos que excedan el nuevo límite se
+        desactivan (no se borran) — el más antiguo activo queda, los más
+        nuevos se archivan primero, criterio propio: se listaron después,
+        se asume que el listado viejo es el más consolidado."""
+        limite = self.limite_productos()
+        activos = list(self.productos.filter(publicado=True).order_by("creado"))
+        excedentes = activos[limite:]
+        for producto in excedentes:
+            producto.publicado = False
+            producto.save(update_fields=["publicado"])
+        return len(excedentes)
 
 
 class ContactoEmpresa(models.Model):
@@ -354,6 +439,16 @@ class AtributoDefinicion(models.Model):
 # --- Productos -------------------------------------------------------------
 
 class Producto(models.Model):
+    class EstadoVerificacion(models.TextChoices):
+        """Insignia pública «Producto Verificado» (documento de membresías,
+        secciones 10.9-10.11) — antes era un simple booleano `verificado`.
+        Independiente de si la empresa está verificada (sección 10.12)."""
+        NO_VERIFICADO = "no_verificado", "No verificado"
+        EN_REVISION = "en_revision", "En revisión"
+        VERIFICADO = "verificado", "Verificado"
+        OBSERVADO = "observado", "Observado"
+        SUSPENDIDO = "suspendido", "Suspendido"
+
     empresa = models.ForeignKey(
         Empresa, on_delete=models.CASCADE, related_name="productos",
         help_text="Empresa proveedora dueña de este producto.",
@@ -393,10 +488,10 @@ class Producto(models.Model):
         'Ejemplo: {"puertos": 24, "poe": true}.',
     )
 
-    verificado = models.BooleanField(
-        default=False,
-        help_text="Marcalo cuando el equipo corroboró la información con el proveedor. "
-        "Se muestra como insignia en el catálogo público.",
+    estado_verificacion = models.CharField(
+        max_length=15, choices=EstadoVerificacion.choices, default=EstadoVerificacion.NO_VERIFICADO,
+        help_text="Pasalo a Verificado cuando el equipo corroboró la información con el proveedor. "
+        "La insignia pública solo se muestra si además la empresa tiene plan PYME o superior.",
     )
     publicado = models.BooleanField(default=False, help_text="Solo los productos publicados se muestran en el catálogo público.")
     destacado = models.BooleanField(default=False, help_text="Los productos destacados aparecen en la portada del sitio.")
@@ -420,10 +515,31 @@ class Producto(models.Model):
     def imagen_principal(self):
         return self.imagenes.filter(es_principal=True).first()
 
+    @property
+    def es_verificado(self):
+        """Insignia pública «✓ Producto Verificado» — requiere el estado Y
+        que la empresa tenga plan PYME o superior (sección 10.9)."""
+        return (
+            self.estado_verificacion == self.EstadoVerificacion.VERIFICADO
+            and self.empresa.nivel_comercial != Empresa.NivelComercial.FREE
+        )
+
     def clean(self):
-        """Valida `atributos` contra las definiciones heredadas de la categoría:
-        rechaza claves no definidas, tipos equivocados, opciones fuera de lista
-        y faltantes obligatorios."""
+        """Valida el límite de productos activos del plan de la empresa
+        (documento de membresías, sección 15) y `atributos` contra las
+        definiciones heredadas de la categoría: rechaza claves no definidas,
+        tipos equivocados, opciones fuera de lista y faltantes obligatorios."""
+        if self.publicado and self.empresa_id:
+            limite = self.empresa.limite_productos()
+            activos = self.empresa.productos.filter(publicado=True).exclude(pk=self.pk).count()
+            if activos >= limite:
+                raise ValidationError({
+                    "publicado": f"Esta empresa ya tiene {activos} producto{'s' if activos != 1 else ''} "
+                    f"activo{'s' if activos != 1 else ''} — el máximo de su plan "
+                    f"({self.empresa.get_nivel_comercial_display()}) es {limite}. Desactivá otro "
+                    "producto o subí de plan para publicar este.",
+                })
+
         if self.categoria_id is None:
             return
         if not isinstance(self.atributos, dict):
