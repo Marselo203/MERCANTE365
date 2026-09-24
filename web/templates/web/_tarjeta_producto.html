@@ -2,7 +2,7 @@
   <div class="foto">
     {% if p.es_verificado %}<span class="badge-verificado" title="Verificado por la plataforma">✓ Verificado</span>{% endif %}
     {% with img=p.imagen_principal %}
-    {% if img %}<img src="{{ img.imagen.url }}" alt="{{ img.alt|default:p.nombre }}">{% endif %}
+    {% if img %}<img loading="lazy" src="{{ img.imagen.url }}" alt="{{ img.alt|default:p.nombre }}">{% endif %}
     {% endwith %}
     <span class="rubro">{{ p.categoria.nombre }}</span>
   </div>

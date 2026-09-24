@@ -23,6 +23,13 @@ def _puede_ver(user, recurso):
 
 
 def nav(request):
+    # El procesador está registrado para TODAS las plantillas, pero este menú
+    # solo lo usa panel/base.html. Sin este corte, cada página del sitio
+    # público vista por un proveedor logueado cargaba su tabla de permisos
+    # (2 queries) para armar un menú que esa plantilla nunca muestra.
+    if not getattr(request.user, "is_staff", False):
+        return {}
+
     items = [("panel:dashboard", "Inicio")]
     for entrada in MENU:
         tipo, slug = entrada[0], entrada[1]

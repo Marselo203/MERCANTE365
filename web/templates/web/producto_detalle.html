@@ -28,7 +28,7 @@
       {% if imagenes|length > 1 %}
       <div class="miniaturas">
         {% for img in imagenes %}
-        <img src="{{ img.imagen.url }}" alt="{{ img.alt|default:producto.nombre }}">
+        <img loading="lazy" src="{{ img.imagen.url }}" alt="{{ img.alt|default:producto.nombre }}">
         {% endfor %}
       </div>
       {% endif %}

@@ -1,12 +1,17 @@
 """Cubre lo único no trivial de los modelos: herencia de atributos y la
 validación del JSONB de Producto.  `docker compose exec web python manage.py test`"""
 
+import io
+import tempfile
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.test import TestCase
+from django.test import TestCase, override_settings
+
+from PIL import Image
 
 from catalogo.models import (
     AtributoDefinicion,
@@ -257,3 +262,65 @@ class AdminCargaSinErrores(TestCase):
             "/django-admin/catalogo/producto/add/",
         ]:
             self.assertEqual(self.client.get(url).status_code, 200, url)
+
+
+@override_settings(
+    MEDIA_ROOT=tempfile.mkdtemp(),
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    },
+)
+class RedimensionadoDeFotos(TestCase):
+    """Una foto de celular entra en MB y sale a 1600 px de lado mayor: es lo
+    que evita que cada vista del catálogo baje decenas de MB desde Object
+    Storage (y lo que se paga por ese tráfico)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cl = Pais.objects.create(codigo_iso="CL", nombre="Chile")
+        reg = Region.objects.create(pais=cl, nombre="RM", slug="rm")
+        ciu = Ciudad.objects.create(region=reg, nombre="Santiago", slug="santiago")
+        emp = Empresa.objects.create(
+            rol=Empresa.Rol.PROVEEDORA, razon_social="ACME", identificador_tributario="1",
+            slug="acme", pais=cl, region=reg, ciudad=ciu,
+        )
+        cat = Categoria.objects.create(nombre="Cables", slug="cables")
+        cls.producto = Producto.objects.create(
+            empresa=emp, categoria=cat, nombre="A", slug="a", precio_unitario=Decimal("1"),
+        )
+
+    def _subir(self, ancho, alto, formato="JPEG", modo="RGB"):
+        buffer = io.BytesIO()
+        Image.new(modo, (ancho, alto), "teal").save(buffer, format=formato)
+        archivo = SimpleUploadedFile(
+            f"foto.{formato.lower()}", buffer.getvalue(), content_type=f"image/{formato.lower()}"
+        )
+        return ImagenProducto.objects.create(producto=self.producto, imagen=archivo)
+
+    def test_una_foto_grande_se_reduce_conservando_la_proporcion(self):
+        img = self._subir(4000, 3000)
+        self.assertEqual(Image.open(img.imagen).size, (1600, 1200))
+
+    def test_una_foto_chica_no_se_toca(self):
+        img = self._subir(800, 600)
+        self.assertEqual(Image.open(img.imagen).size, (800, 600))
+
+    def test_un_png_sin_transparencia_se_guarda_como_jpeg(self):
+        # Un PNG de foto pesa ~10x lo que el JPEG equivalente; si no hay
+        # transparencia que preservar, no hay motivo para pagar eso.
+        img = self._subir(4000, 3000, formato="PNG")
+        self.assertTrue(img.imagen.name.endswith(".jpg"), img.imagen.name)
+        self.assertEqual(Image.open(img.imagen).format, "JPEG")
+
+    def test_un_png_con_transparencia_sigue_siendo_png(self):
+        img = self._subir(4000, 3000, formato="PNG", modo="RGBA")
+        self.assertTrue(img.imagen.name.endswith(".png"), img.imagen.name)
+        self.assertEqual(Image.open(img.imagen).size, (1600, 1200))
+
+    def test_guardar_otro_campo_no_vuelve_a_comprimir(self):
+        img = self._subir(4000, 3000)
+        antes = img.imagen.name, img.imagen.size
+        img.orden = 2
+        img.save()
+        self.assertEqual((img.imagen.name, img.imagen.size), antes)

@@ -10,10 +10,15 @@ formulario del panel de gestión (ver panel/templates/panel/form.html) — es la
 única fuente, no hay textos duplicados en las plantillas.
 """
 
+import io
+import os
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.text import slugify
+from PIL import Image, ImageOps
 
 
 # --- Ubicaciones ---------------------------------------------------------------
@@ -241,6 +246,13 @@ class Empresa(models.Model):
         return self.productos.filter(publicado=True).count()
 
     def save(self, *args, **kw):
+        # Mismo tratamiento que las fotos de producto: un logo de 4 MB pesa
+        # igual en la ficha pública que una foto de 4 MB (ver `reducir_imagen`).
+        if self.logo and not self.logo._committed:
+            reducido = reducir_imagen(self.logo)
+            if reducido is not None:
+                self.logo = reducido
+
         if not self.slug:
             base = slugify(self.razon_social)[:130]
             slug, sufijo = base, 1
@@ -359,14 +371,29 @@ class Categoria(models.Model):
                 por_clave.setdefault(ad.clave, ad)
         return sorted(por_clave.values(), key=lambda ad: (ad.orden, ad.clave))
 
+    @classmethod
+    def arbol(cls):
+        """{id: [ese id + todos sus descendientes]} para TODO el árbol, en una
+        sola query. La tabla de categorías es chica (decenas de filas): traerla
+        entera y resolver la jerarquía en Python sale mucho más barato que una
+        query por nodo, que es lo que costaba recorrer `hijas` recursivamente."""
+        hijas = {}
+        nodos = list(cls.objects.values_list("pk", "padre_id"))
+        for pk, padre_id in nodos:
+            hijas.setdefault(padre_id, []).append(pk)
+
+        def bajar(pk):
+            ids = [pk]
+            for hija in hijas.get(pk, ()):
+                ids += bajar(hija)
+            return ids
+
+        return {pk: bajar(pk) for pk, _ in nodos}
+
     def con_descendientes(self):
         """IDs de esta categoría y de todas sus hijas, recursivo. Para filtrar
-        productos por un rubro que puede tener subcategorías. Sin ruta
-        materializada: alcanza mientras el árbol sea chico (ver seed_demo)."""
-        ids = [self.pk]
-        for hija in self.hijas.all():
-            ids += hija.con_descendientes()
-        return ids
+        productos por un rubro que puede tener subcategorías."""
+        return self.arbol().get(self.pk, [self.pk])
 
 
 class AtributoDefinicion(models.Model):
@@ -513,7 +540,10 @@ class Producto(models.Model):
 
     @property
     def imagen_principal(self):
-        return self.imagenes.filter(es_principal=True).first() or self.imagenes.first()
+        # `imagenes.all()` reusa el prefetch_related de la vista cuando lo hay;
+        # el `ordering` del Meta ya pone la principal primera. Con `.filter()`
+        # acá era una query por producto en cada grilla del catálogo.
+        return next(iter(self.imagenes.all()), None)
 
     @property
     def es_verificado(self):
@@ -563,6 +593,50 @@ class Producto(models.Model):
             raise ValidationError({"atributos": errores})
 
 
+LADO_MAXIMO_IMAGEN = 1600
+FORMATOS_REDIMENSIONABLES = {"JPEG", "PNG", "WEBP"}
+
+
+def reducir_imagen(campo, lado=LADO_MAXIMO_IMAGEN):
+    """La foto reescalada a `lado` px de lado mayor, o None si ya entra y no
+    hay nada que hacer.
+
+    Una foto de celular son 3-5 MB y 4000 px de ancho; la tarjeta del catálogo
+    la muestra a 400. Sin esto, cada vista del Market bajaba decenas de MB
+    desde Object Storage al teléfono del comprador. Se conserva el formato
+    original (un PNG sigue siendo PNG) para no cambiar la extensión del
+    archivo ni perder transparencias."""
+    campo.open()
+    imagen = Image.open(campo.file)
+    formato = imagen.format
+    if formato not in FORMATOS_REDIMENSIONABLES or max(imagen.size) <= lado:
+        return None
+
+    nombre, extension = os.path.splitext(os.path.basename(campo.name))
+    # Un PNG de fotografía pesa 10 veces lo que el JPEG equivalente y no gana
+    # nada a cambio (medido: 3,5 MB contra 270 KB en una foto de celular).
+    # Solo se conserva PNG si la imagen usa transparencia de verdad.
+    if formato == "PNG" and "A" not in imagen.getbands() and "transparency" not in imagen.info:
+        formato, extension = "JPEG", ".jpg"
+
+    # La cámara del celular guarda la foto siempre en horizontal y anota la
+    # rotación en el EXIF; al reescribirla ese dato se pierde y la foto sale
+    # acostada, así que hay que aplicarlo antes.
+    imagen = ImageOps.exif_transpose(imagen)
+    imagen.thumbnail((lado, lado))
+    if formato == "JPEG" and imagen.mode not in ("RGB", "L"):
+        imagen = imagen.convert("RGB")
+
+    buffer = io.BytesIO()
+    opciones = {"optimize": True}
+    if formato == "JPEG":
+        opciones |= {"quality": 85, "progressive": True}
+    imagen.save(buffer, format=formato, **opciones)
+    # Solo el nombre del archivo: la ruta con fecha la vuelve a armar
+    # `upload_to` al guardar.
+    return ContentFile(buffer.getvalue(), name=f"{nombre}{extension}")
+
+
 class ImagenProducto(models.Model):
     MAX_POR_PRODUCTO = 3
 
@@ -610,6 +684,14 @@ class ImagenProducto(models.Model):
             )
 
     def save(self, *args, **kw):
+        # `_committed` es False solo cuando hay un archivo recién subido sin
+        # escribir: así guardar cualquier otro campo (marcar la principal,
+        # cambiar el orden) no vuelve a recomprimir una foto ya procesada.
+        if self.imagen and not self.imagen._committed:
+            reducida = reducir_imagen(self.imagen)
+            if reducida is not None:
+                self.imagen = reducida
+
         # Marcar una imagen como principal desplaza a la anterior en vez de
         # chocar con la restricción de unicidad — el staff no tiene que
         # acordarse de desmarcar la vieja a mano en dos pasos.

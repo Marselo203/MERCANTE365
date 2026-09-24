@@ -62,8 +62,11 @@ docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 
 `compose.prod.yaml` agrega nginx (TLS vía certbot, sirviendo `/static/` y
 `/media/`) y saca el bind-mount de código y los puertos de la base — el
-`Dockerfile` es el mismo que en desarrollo. Ver `docker/nginx.conf` (hay que
-reemplazar `DOMINIO` por el dominio real antes de emitir el certificado).
+`Dockerfile` es el mismo que en desarrollo. El dominio sale de la variable
+`DOMINIO` del `.env`; nginx la sustituye sola en su plantilla.
+
+**Puesta en marcha en Oracle Cloud desde cero: ver [DEPLOY.md](DEPLOY.md)**
+(cuenta Pay As You Go, VM Ampere A1, Object Storage, TLS y respaldos).
 
 ## Estado actual
 

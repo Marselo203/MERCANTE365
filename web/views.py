@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, TemplateView
@@ -31,7 +31,7 @@ class Home(TemplateView):
         ctx = super().get_context_data(**kw)
         ctx["destacados"] = (
             Producto.objects.filter(publicado=True, destacado=True)
-            .select_related("empresa", "categoria")[:8]
+            .select_related("empresa", "categoria").prefetch_related("imagenes")[:8]
         )
         return ctx
 
@@ -75,7 +75,11 @@ class Market(TemplateView):
         ctx = super().get_context_data(**kw)
         get = self.request.GET
 
-        qs = Producto.objects.filter(publicado=True).select_related("empresa", "categoria")
+        qs = (
+            Producto.objects.filter(publicado=True)
+            .select_related("empresa", "categoria")
+            .prefetch_related("imagenes")
+        )
 
         q = get.get("q", "").strip()
         if q:
@@ -106,13 +110,22 @@ class Market(TemplateView):
         params.pop("page", None)
         qs_sin_page = params.urlencode()
 
+        # Dos queries para toda la barra lateral: el árbol de categorías y un
+        # conteo agrupado. Antes era un recorrido recursivo + un COUNT por cada
+        # rubro, y crecía con la cantidad de subcategorías.
+        arbol = Categoria.arbol()
+        por_categoria = dict(
+            Producto.objects.filter(publicado=True)
+            .values_list("categoria_id")
+            .annotate(total=Count("id"))
+        )
         categorias = [
             {
                 "nombre": cat.nombre,
                 "slug": cat.slug,
-                "num_productos": Producto.objects.filter(
-                    categoria_id__in=cat.con_descendientes(), publicado=True
-                ).count(),
+                "num_productos": sum(
+                    por_categoria.get(i, 0) for i in arbol.get(cat.pk, [cat.pk])
+                ),
             }
             for cat in Categoria.objects.filter(padre__isnull=True).order_by("nombre")
         ]
@@ -153,7 +166,14 @@ class PerfilProveedor(DetailView):
     def get_context_data(self, **kw):
         ctx = super().get_context_data(**kw)
         empresa = self.object
-        productos = Producto.objects.filter(empresa=empresa, publicado=True).select_related("categoria")
+        # `select_related("empresa")` no es redundante: la insignia «Verificado»
+        # de cada tarjeta lee `p.empresa.nivel_comercial`, y sin esto era una
+        # query por producto (una empresa Premium Plus puede tener 300).
+        productos = (
+            Producto.objects.filter(empresa=empresa, publicado=True)
+            .select_related("categoria", "empresa")
+            .prefetch_related("imagenes")
+        )
         ctx["productos"] = productos
         ctx["categorias"] = sorted({p.categoria for p in productos}, key=lambda c: c.nombre)
         ctx["contacto"] = empresa.contactos.filter(es_principal=True).first()

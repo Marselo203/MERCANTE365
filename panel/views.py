@@ -165,6 +165,11 @@ class _Base(StaffMixin):
 
     def get_queryset(self):
         qs = self.recurso["model"].objects.filter(**self.recurso.get("filtro", {}))
+        # `select_related()` sin argumentos sigue solos todos los FK no nulos,
+        # recursivamente: las columnas de las tablas del panel son casi todas
+        # FKs (empresa, categoría, producto, ciudad…) y sin esto cada celda de
+        # cada una de las 50 filas era una query aparte.
+        qs = qs.select_related()
         return qs if qs.ordered else qs.order_by("pk")  # paginación determinista
 
     def get_context_data(self, **kw):

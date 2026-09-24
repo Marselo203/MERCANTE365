@@ -1,7 +1,7 @@
 # Atajos del día a día. Todo pasa por compose, así nunca corres nada
 # contra un Python del host que no sea el de la imagen.
 
-.PHONY: up down logs shell psql migrate mm seed test lint reset prod-up prod-logs
+.PHONY: up down logs shell psql migrate mm seed test lint reset prod-up prod-logs prod-cert prod-backup
 
 up:            ## Levanta el entorno de desarrollo
 	docker compose up --build
@@ -47,8 +47,19 @@ reset:         ## BORRA la base y la recrea desde cero con datos demo
 	sleep 8
 	$(MAKE) seed
 
-prod-up:
+prod-up:       ## Despliega/actualiza en el servidor
 	docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 
 prod-logs:
 	docker compose -f compose.yaml -f compose.prod.yaml logs -f
+
+prod-cert:     ## Emite el certificado la PRIMERA vez (nginx todavía no puede arrancar sin él)
+	@set -a; . ./.env; set +a; \
+	sudo mkdir -p /srv/certbot; \
+	docker run --rm -d --name certbot-tmp -p 80:80 -v /srv/certbot:/usr/share/nginx/html:ro nginx:1.27-alpine; \
+	sudo certbot certonly --webroot -w /srv/certbot -d $$DOMINIO --agree-tos --no-eff-email -m $${CERT_EMAIL:-admin@$$DOMINIO}; \
+	docker stop certbot-tmp
+	@echo "Listo. Las renovaciones las hace solo el timer de certbot por webroot."
+
+prod-backup:   ## Respaldo manual (el nocturno lo dispara cron)
+	./docker/backup.sh
