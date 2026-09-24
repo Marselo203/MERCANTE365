@@ -136,8 +136,9 @@ RECURSOS = [
     {
         "slug": "imagen", "model": ImagenProducto, "permiso": "catalogo.change_imagenproducto",
         "etiqueta": "imagen", "etiqueta_plural": "imágenes de producto",
-        "descripcion": "Las fotos de cada producto. Marcá una sola como «Principal»: es la "
-        "que se muestra primero en el catálogo y en las tarjetas del sitio.",
+        "descripcion": "Las fotos de cada producto, hasta 3 por producto. Marcá una sola como "
+        "«Principal»: es la que se muestra primero en el catálogo y en las tarjetas del sitio "
+        "(si no marcás ninguna se usa la primera).",
         "form_fields": ["producto", "imagen", "alt", "es_principal", "orden"],
         "columnas": [
             ("producto", "Producto"), ("alt", "Alt"), ("es_principal", "Principal"),
@@ -196,7 +197,7 @@ RECURSOS = [
         ],
         "columnas": [
             ("nombre", "Nombre"), ("zona", "Zona"), ("codigo_referencia", "Código de referencia"),
-            ("comision", "Comisión %"), ("get_estado_display", "Estado"),
+            ("get_estado_display", "Estado"),
         ],
     },
     {
@@ -257,6 +258,13 @@ RECURSOS = [
 ]
 
 
+# Recursos que siguen existiendo (sus URLs responden y el modelo se sigue
+# usando) pero que NO se muestran en el menú del Back Office: la comisión es
+# un acuerdo que MERCANTE365 maneja fuera del sitio, y las vinculaciones de
+# vendedor se gestionan desde la Red Comercial, no como sección propia.
+OCULTOS = {"comision", "vinculacion"}
+
+
 # Secciones del Back Office que menciona el documento de producto pero que
 # todavía son visión futura (fases posteriores a esta), sin modelo propio
 # todavía: muestran una página fija "Próximamente" en vez de un 404.
@@ -285,7 +293,6 @@ MENU = [
     ("recurso", "requerimiento", "Leads / RFQ"),
     ("recurso", "oportunidad", "Oportunidades"),
     ("recurso", "venta", "Ventas"),
-    ("recurso", "comision", "Comisiones"),
     ("recurso", "comprador"),
     ("proximamente", "configuracion"),
 ]

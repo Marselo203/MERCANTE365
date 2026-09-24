@@ -1,4 +1,11 @@
 {% load static %}
+{% comment %}Las "ofertas" son los descuentos de los planes (anual = 12 meses
+al precio de 10). Una sola franja para todo el sitio: si mañana cambia la
+oferta se toca acá y nada más.{% endcomment %}
+<a class="franja-oferta" href="{% url 'web:planes' %}">
+  🎉 <strong>Oferta</strong> — contratá cualquier plan por un año y pagás 12 meses al precio de 10
+  <span class="franja-cta">Ver planes →</span>
+</a>
 <header class="cab">
   <div class="envoltorio cab-int">
     <a href="{% url 'web:home' %}"><span class="marca-box"><img class="logo" src="{% static 'web/logo.png' %}" alt="MERCANTE365"></span></a>
@@ -9,7 +16,9 @@
       <a href="{% url 'web:planes' %}"{% if request.resolver_match.url_name == 'planes' %} class="activo"{% endif %}>Planes</a>
     </nav>
     <span class="sp"></span>
-    {% if request.user.is_authenticated and request.user.empresa %}
+    {% if request.user.is_staff %}
+    <a class="ingresar" href="{% url 'panel:dashboard' %}">Panel de gestión</a>
+    {% elif request.user.is_authenticated and request.user.empresa %}
     <a class="ingresar" href="{% url 'web:cuenta_empresa' %}">Mi empresa</a>
     {% else %}
     <a class="ingresar" href="{% url 'web:cuenta_login' %}">Ingresar</a>

@@ -1,11 +1,21 @@
+import base64
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from catalogo.models import (
     Categoria, Ciudad, ContactoEmpresa, Empresa, Pais, Producto, Region, Requerimiento,
 )
+
+
+# GIF de 1x1 transparente: lo mínimo que Pillow acepta como imagen válida.
+_GIF_1X1 = base64.b64decode("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+
+
+def _gif():
+    return SimpleUploadedFile("foto.gif", _GIF_1X1, content_type="image/gif")
 
 
 class Landing(TestCase):
@@ -106,14 +116,16 @@ class MarketYFicha(TestCase):
         self.assertEqual(Requerimiento.objects.count(), 0)
         self.assertContains(r, "errorlist")
 
-    def test_el_contacto_de_la_empresa_no_es_publico(self):
-        # El modelo de negocio es de intermediación: el comprador llega al
-        # proveedor solo a través del formulario de requerimiento, nunca con
-        # su email/teléfono directo.
+    def test_el_contacto_principal_se_muestra_en_empresa_y_en_producto(self):
+        # Pedido del cliente del 19/09/2026: el contacto principal de la
+        # empresa es público, tanto en su perfil como en cada ficha de
+        # producto. El formulario de requerimiento sigue estando igual.
         r = self.client.get(f"/market/{self.publicado_en_hoja.pk}/")
-        self.assertNotContains(r, "contacto-secreto@acme.cl")
+        self.assertContains(r, "contacto-secreto@acme.cl")
+        self.assertContains(r, "Juan Proveedor")
         r = self.client.get("/proveedores/acme/")
-        self.assertNotContains(r, "contacto-secreto@acme.cl")
+        self.assertContains(r, "contacto-secreto@acme.cl")
+        self.assertContains(r, "Juan Proveedor")
 
     def test_perfil_del_proveedor_muestra_solo_productos_publicados(self):
         r = self.client.get("/proveedores/acme/")
@@ -213,6 +225,23 @@ class CuentaDeProveedor(TestCase):
         cls.ciu = Ciudad.objects.create(region=cls.reg, nombre="Santiago", slug="santiago")
         cls.cat = Categoria.objects.create(nombre="Ferretería", slug="ferreteria")
 
+    # El formulario de producto de la cuenta lleva adentro el formset de las
+    # 3 fotos; sin su management form el POST no valida (igual que en el
+    # navegador, donde la plantilla siempre lo dibuja).
+    FOTOS_VACIAS = {
+        "imagenes-TOTAL_FORMS": "3", "imagenes-INITIAL_FORMS": "0",
+        "imagenes-MIN_NUM_FORMS": "0", "imagenes-MAX_NUM_FORMS": "3",
+    }
+
+    def _datos_producto(self, nombre, slug, **extra):
+        return {
+            "categoria": self.cat.pk, "nombre": nombre, "slug": slug, "sku": "",
+            "descripcion_tecnica": "", "precio_unitario": "1000", "moneda": "CLP",
+            "cantidad_minima_pedido": 1, "unidad_empaque": "", "plazo_entrega_dias": 5,
+            "stock_disponible": 10, "atributos": "{}", "publicado": "on",
+            **self.FOTOS_VACIAS, **extra,
+        }
+
     def _datos_registro(self, username, razon_social, rut):
         return {
             "username": username, "email": f"{username}@ejemplo.cl",
@@ -232,30 +261,42 @@ class CuentaDeProveedor(TestCase):
         # queda logueado después de registrarse
         self.assertEqual(self.client.get("/cuenta/").status_code, 200)
 
+    def test_login_de_proveedor_aterriza_en_su_cuenta(self):
+        """Sin `next_page` propio, el login cae en LOGIN_REDIRECT_URL (el panel
+        de staff) y el proveedor se come un 403 apenas inicia sesión."""
+        self.client.post("/cuenta/registro/", self._datos_registro("prov0", "Cero SpA", "0"))
+        self.client.logout()
+        r = self.client.post(
+            "/cuenta/ingresar/", {"username": "prov0", "password": "ContraseñaSegura123"},
+        )
+        self.assertRedirects(r, "/cuenta/")
+
     def test_cuenta_requiere_login(self):
         r = self.client.get("/cuenta/")
         self.assertEqual(r.status_code, 302)
         self.assertIn("/cuenta/ingresar/", r.url)
 
-    def test_staff_sin_empresa_no_entra_a_cuenta(self):
+    def test_staff_sin_empresa_va_al_panel_no_al_home(self):
+        """El staff no tiene empresa: antes rebotaba al home y quedaba sin
+        forma de llegar al panel salvo tipeando la URL."""
         User.objects.create_user("staff_solo", password="x", is_staff=True)
         self.client.login(username="staff_solo", password="x")
+        r = self.client.get("/cuenta/", follow=True)
+        self.assertEqual(r.redirect_chain[-1][0], "/panel/")
+
+    def test_usuario_comun_sin_empresa_sigue_yendo_al_home(self):
+        User.objects.create_user("sin_empresa", password="x")
+        self.client.login(username="sin_empresa", password="x")
         r = self.client.get("/cuenta/", follow=True)
         self.assertEqual(r.redirect_chain[-1][0], "/")
 
     def test_mis_productos_respeta_el_limite_del_plan(self):
         self.client.post("/cuenta/registro/", self._datos_registro("prov2", "Dos SpA", "2"))
-        datos = lambda n: {
-            "categoria": self.cat.pk, "nombre": f"P{n}", "slug": f"p{n}", "sku": "",
-            "descripcion_tecnica": "", "precio_unitario": "1000", "moneda": "CLP",
-            "cantidad_minima_pedido": 1, "unidad_empaque": "", "plazo_entrega_dias": 5,
-            "stock_disponible": 10, "atributos": "{}", "publicado": "on",
-        }
         for n in range(3):
-            r = self.client.post("/cuenta/productos/nuevo/", datos(n))
+            r = self.client.post("/cuenta/productos/nuevo/", self._datos_producto(f"P{n}", f"p{n}"))
             self.assertEqual(r.status_code, 302, f"producto {n}")
 
-        r = self.client.post("/cuenta/productos/nuevo/", datos(4))
+        r = self.client.post("/cuenta/productos/nuevo/", self._datos_producto("P4", "p4"))
         self.assertEqual(r.status_code, 200)  # rechazado, no redirige
         self.assertContains(r, "el máximo de su plan")
         self.assertEqual(Producto.objects.count(), 3)
@@ -291,3 +332,64 @@ class CuentaDeProveedor(TestCase):
         self.assertFalse(empresa.calificado)
         self.assertEqual(empresa.estado_verificacion, Empresa.EstadoVerificacion.NO_VERIFICADA)
         self.assertEqual(empresa.nivel_comercial, Empresa.NivelComercial.FREE)
+
+    def test_mis_requerimientos_no_muestra_el_contacto_del_comprador(self):
+        self.client.post("/cuenta/registro/", self._datos_registro("prov5", "Cinco SpA", "5"))
+        empresa = Empresa.objects.get(razon_social="Cinco SpA")
+        producto = Producto.objects.create(
+            empresa=empresa, categoria=self.cat, nombre="Producto de Cinco", slug="producto-de-cinco",
+            precio_unitario=Decimal("1"),
+        )
+        Requerimiento.objects.create(
+            producto=producto, nombre_contacto="Comprador Secreto",
+            email_contacto="secreto@ejemplo.bo", telefono_contacto="+591 700 00000",
+            empresa_compradora="Importadora Secreta", volumen_requerido="10 pallets",
+        )
+        r = self.client.get("/cuenta/requerimientos/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "10 pallets")  # sí ve qué le pidieron
+        for dato in ["Comprador Secreto", "secreto@ejemplo.bo", "+591 700 00000", "Importadora Secreta"]:
+            self.assertNotContains(r, dato)  # pero no a quién contactar
+
+    def test_mis_requerimientos_solo_muestra_los_de_sus_propios_productos(self):
+        self.client.post("/cuenta/registro/", self._datos_registro("prov6", "Seis SpA", "6"))
+        otra = Empresa.objects.create(
+            rol=Empresa.Rol.PROVEEDORA, razon_social="Otra SpA", identificador_tributario="99",
+            pais=self.cl, region=self.reg, ciudad=self.ciu,
+        )
+        producto_ajeno = Producto.objects.create(
+            empresa=otra, categoria=self.cat, nombre="Producto Ajeno", slug="producto-ajeno-req",
+            precio_unitario=Decimal("1"),
+        )
+        Requerimiento.objects.create(
+            producto=producto_ajeno, nombre_contacto="X", email_contacto="x@ejemplo.cl",
+        )
+        r = self.client.get("/cuenta/requerimientos/")
+        self.assertNotContains(r, "Producto Ajeno")
+
+    def test_red_comercial_muestra_upsell_si_no_es_premium_plus(self):
+        self.client.post("/cuenta/registro/", self._datos_registro("prov7", "Siete SpA", "7"))
+        r = self.client.get("/cuenta/red-comercial/")
+        self.assertContains(r, "Disponible desde Premium Plus")
+
+    def test_puede_subir_hasta_3_fotos_al_crear_un_producto(self):
+        self.client.post("/cuenta/registro/", self._datos_registro("prov9", "Nueve SpA", "9"))
+        r = self.client.post("/cuenta/productos/nuevo/", {
+            **self._datos_producto("Con fotos", "con-fotos"),
+            "imagenes-TOTAL_FORMS": "3", "imagenes-INITIAL_FORMS": "0",
+            "imagenes-MIN_NUM_FORMS": "0", "imagenes-MAX_NUM_FORMS": "3",
+            "imagenes-0-imagen": _gif(), "imagenes-0-alt": "Frente",
+            "imagenes-1-imagen": _gif(), "imagenes-1-alt": "Perfil",
+            "imagenes-2-alt": "",  # sin archivo: no crea nada
+        })
+        self.assertEqual(r.status_code, 302, getattr(r, "context", None) and r.context["form"].errors)
+        producto = Producto.objects.get(slug="con-fotos")
+        self.assertEqual(producto.imagenes.count(), 2)
+        # Nadie marcó una principal: la tarjeta del catálogo cae en la primera.
+        self.assertEqual(producto.imagen_principal, producto.imagenes.first())
+
+    def test_estadisticas_responde_200_con_datos_reales(self):
+        self.client.post("/cuenta/registro/", self._datos_registro("prov8", "Ocho SpA", "8"))
+        r = self.client.get("/cuenta/estadisticas/")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "0/3")  # 0 productos activos de 3 (Free)

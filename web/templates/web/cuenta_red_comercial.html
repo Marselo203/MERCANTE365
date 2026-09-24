@@ -1,0 +1,41 @@
+{% extends "web/base.html" %}
+{% block title %}Mi Red Comercial — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="cuenta-cab">
+    <h1>Mi Red Comercial</h1>
+  </div>
+
+  {% if empresa.nivel_comercial == "premium_plus" %}
+  <p class="ayuda">Vendedores independientes de MERCANTE365 vinculados a tus productos. Las
+  condiciones comerciales de cada venta se acuerdan previamente con MERCANTE365.</p>
+  <ul class="mis-productos">
+    {% for v in vinculaciones %}
+    <li>
+      <span class="nombre">{{ v.producto.nombre }}</span>
+      <span>{{ v.vendedor.nombre }}</span>
+      <span class="estado">{{ v.vendedor.zona|default:"—" }}</span>
+    </li>
+    {% empty %}
+    <p class="vacio">Todavía no tenés vendedores vinculados a tus productos. Escribinos si querés
+    solicitar la activación comercial de alguno.</p>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="requerimiento-caja cuenta-caja">
+    <h3>🚀 Disponible desde Premium Plus</h3>
+    <p>La Red Comercial de MERCANTE365 (vendedores independientes que promueven tus productos
+    bajo condiciones acordadas con la plataforma) está disponible a partir del plan Premium Plus.</p>
+    <a class="btn" href="{% url 'web:planes' %}">Ver plan Premium Plus</a>
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

@@ -77,6 +77,8 @@
       {% endif %}
       {% endwith %}
 
+      {% include "web/_contacto_empresa.html" %}
+
       <div class="requerimiento-caja">
         <h3>📨 Enviar requerimiento</h3>
         <p>Nuestro equipo de intermediación clasifica tu pedido y presenta la coincidencia con {{ producto.empresa.nombre_comercial|default:producto.empresa.razon_social }}.</p>

@@ -1,0 +1,28 @@
+{% extends "web/base.html" %}
+{% block title %}Estadísticas — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="cuenta-cab">
+    <h1>Estadísticas</h1>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="icono">📦</span><span class="n">{{ activos }}/{{ limite }}</span><span class="t">productos activos</span></div>
+    <div class="stat"><span class="icono">✓</span><span class="n">{{ productos_verificados }}</span><span class="t">producto{{ productos_verificados|pluralize }} verificado{{ productos_verificados|pluralize }}</span></div>
+    <div class="stat"><span class="icono">📨</span><span class="n">{{ total_requerimientos }}</span><span class="t">requerimiento{{ total_requerimientos|pluralize }} recibido{{ total_requerimientos|pluralize }}</span></div>
+  </div>
+
+  {% if total_requerimientos %}
+  <p class="cuenta-nota">{{ requerimientos_nuevos }} de esos requerimientos
+  todavía están sin revisar por nuestro equipo.</p>
+  {% endif %}
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}

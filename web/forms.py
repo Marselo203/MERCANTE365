@@ -1,8 +1,17 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.forms import inlineformset_factory
 
-from catalogo.models import Ciudad, Empresa, Pais, Producto, Region, Requerimiento
+from catalogo.models import (
+    Ciudad,
+    Empresa,
+    ImagenProducto,
+    Pais,
+    Producto,
+    Region,
+    Requerimiento,
+)
 
 
 class RequerimientoForm(forms.ModelForm):
@@ -69,3 +78,20 @@ class MiProductoForm(forms.ModelForm):
             "precio_unitario", "moneda", "cantidad_minima_pedido", "unidad_empaque",
             "plazo_entrega_dias", "stock_disponible", "atributos", "publicado",
         ]
+
+
+# Las 3 fotos por producto de la cuenta del proveedor. `max_num` +
+# `validate_max` es el tope de Django; el mismo tope vive además en
+# `ImagenProducto.clean()` para que también aplique al panel de gestión.
+# El proveedor no elige cuál es la principal: si no hay ninguna marcada,
+# `Producto.imagen_principal` cae en la primera.
+FotosProductoFormSet = inlineformset_factory(
+    Producto, ImagenProducto,
+    fields=["imagen", "alt"],
+    widgets={"alt": forms.TextInput(attrs={"placeholder": "Qué se ve en la foto (opcional)"})},
+    extra=ImagenProducto.MAX_POR_PRODUCTO,
+    max_num=ImagenProducto.MAX_POR_PRODUCTO,
+    validate_max=True,
+    can_delete=True,
+    can_delete_extra=False,  # el check «borrar» solo en las fotos que ya existen
+)

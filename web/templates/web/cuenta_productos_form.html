@@ -11,7 +11,7 @@
     <h3>{% if object %}✏️ Editar producto{% else %}➕ Nuevo producto{% endif %}</h3>
     <p class="ayuda">La verificación y el destacado los decide MERCANTE365 — no aparecen acá. Los
     campos con <span class="req">*</span> son obligatorios.</p>
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       {{ form.non_field_errors }}
       {% for campo in form %}
@@ -22,6 +22,21 @@
         {{ campo.errors }}
       </div>
       {% endfor %}
+      <h4 class="fotos-tit">📷 Fotos del producto</h4>
+      <p class="ayuda">Hasta 3 fotos. La primera es la que se ve en el catálogo.</p>
+      {{ fotos.management_form }}
+      {{ fotos.non_form_errors }}
+      {% for foto in fotos %}
+      <div class="campo campo-foto">
+        {{ foto.id }}
+        {% if foto.instance.pk %}<img class="foto-mini" src="{{ foto.instance.imagen.url }}" alt="">{% endif %}
+        {{ foto.imagen }}
+        {{ foto.alt }}
+        {% if foto.DELETE %}<label class="foto-borrar">{{ foto.DELETE }} Borrar esta foto</label>{% endif %}
+        {{ foto.errors }}
+      </div>
+      {% endfor %}
+
       <button type="submit" class="btn">Guardar</button>
       <a class="nota" href="{% url 'web:cuenta_productos' %}">Cancelar</a>
     </form>

@@ -337,3 +337,30 @@ class GestionDeImagenes(TestCase):
         self.assertFalse(imagenes[0].es_principal)
         self.assertTrue(imagenes[1].es_principal)
         self.assertEqual(self.producto.imagen_principal, imagenes[1])
+
+    def test_no_deja_subir_mas_de_tres_fotos_por_producto(self):
+        from catalogo.models import ImagenProducto
+
+        for i in range(ImagenProducto.MAX_POR_PRODUCTO):
+            r = self.client.post("/panel/imagen/nuevo/", {
+                "producto": self.producto.pk, "alt": f"Foto {i}", "orden": i,
+                "imagen": self._png(),
+            })
+            self.assertEqual(r.status_code, 302, r.context["form"].errors if r.status_code == 200 else "")
+
+        r = self.client.post("/panel/imagen/nuevo/", {
+            "producto": self.producto.pk, "alt": "La cuarta", "orden": 9, "imagen": self._png(),
+        })
+        self.assertEqual(r.status_code, 200)  # rechazada, no redirige
+        self.assertContains(r, "es el máximo")
+        self.assertEqual(
+            ImagenProducto.objects.filter(producto=self.producto).count(),
+            ImagenProducto.MAX_POR_PRODUCTO,
+        )
+
+    def test_la_tarjeta_usa_la_primera_foto_si_ninguna_es_principal(self):
+        from catalogo.models import ImagenProducto
+
+        primera = ImagenProducto.objects.create(producto=self.producto, imagen="a.jpg", orden=1)
+        ImagenProducto.objects.create(producto=self.producto, imagen="b.jpg", orden=2)
+        self.assertEqual(self.producto.imagen_principal, primera)

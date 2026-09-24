@@ -9,8 +9,14 @@ from django.views.generic import ListView, TemplateView
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, FormView, UpdateView
 
-from catalogo.models import Categoria, Empresa, Producto, Requerimiento, Vendedor
-from web.forms import MiEmpresaForm, MiProductoForm, RegistroProveedorForm, RequerimientoForm
+from catalogo.models import Categoria, Empresa, Producto, Requerimiento, Vendedor, VendedorProducto
+from web.forms import (
+    FotosProductoFormSet,
+    MiEmpresaForm,
+    MiProductoForm,
+    RegistroProveedorForm,
+    RequerimientoForm,
+)
 
 ORDEN = {
     "precio_asc": "precio_unitario",
@@ -42,7 +48,11 @@ class QuienesSomos(TemplateView):
             ).count(),
             "productos": Producto.objects.filter(publicado=True).count(),
             "rubros": Categoria.objects.filter(padre__isnull=True).count(),
+            "vendedores": Vendedor.objects.filter(estado=Vendedor.Estado.ACTIVO).count(),
         }
+        # Solo para mostrar quiénes son: zona y especialidad, nada de comisión
+        # ni de datos de contacto del vendedor.
+        ctx["vendedores"] = Vendedor.objects.filter(estado=Vendedor.Estado.ACTIVO)[:8]
         return ctx
 
 
@@ -123,12 +133,14 @@ class Market(TemplateView):
 class PerfilProveedor(DetailView):
     """Página pública por proveedor (documento de producto, sección 20).
     Muestra lo que hay dato real para: logo, descripción, ubicación, rubros,
-    productos publicados y calificación (con el checklist de "información
-    revisada", sección 21). «Marcas», «Mercados atendidos» y «Capacidad de
-    suministro» son campos del módulo Premium que todavía no existe — no se
-    muestran hasta que existan. El contacto de la empresa NO es público: el
-    modelo de negocio es de intermediación, el comprador llega al proveedor
-    solo a través del formulario de requerimiento."""
+    productos publicados, contacto principal y calificación (con el checklist
+    de "información revisada", sección 21). «Marcas», «Mercados atendidos» y
+    «Capacidad de suministro» son campos del módulo Premium que todavía no
+    existe — no se muestran hasta que existan.
+
+    El contacto principal de la empresa SÍ es público (pedido del cliente,
+    19/09/2026): se muestra acá y en la ficha de cada producto, junto al
+    formulario de requerimiento, que sigue siendo la vía recomendada."""
 
     model = Empresa
     slug_url_kwarg = "slug"
@@ -144,6 +156,7 @@ class PerfilProveedor(DetailView):
         productos = Producto.objects.filter(empresa=empresa, publicado=True).select_related("categoria")
         ctx["productos"] = productos
         ctx["categorias"] = sorted({p.categoria for p in productos}, key=lambda c: c.nombre)
+        ctx["contacto"] = empresa.contactos.filter(es_principal=True).first()
         ctx["checklist_empresa"] = [
             (empresa._meta.get_field(campo).verbose_name, getattr(empresa, campo))
             for campo in Empresa.CHECKLIST_CALIFICACION[:5]
@@ -252,6 +265,11 @@ class ProveedorMixin(LoginRequiredMixin):
 
     def dispatch(self, request, *args, **kw):
         if request.user.is_authenticated and not hasattr(request.user, "empresa"):
+            # Una cuenta de staff no tiene empresa: mandarla al home la dejaba
+            # dando vueltas (entraba por "Ingresar" y volvía al inicio sin
+            # explicación). Va derecho a su panel, que es donde trabaja.
+            if request.user.is_staff:
+                return redirect("panel:dashboard")
             messages.error(request, "Esta cuenta no tiene una empresa asociada a este panel.")
             return redirect("web:home")
         return super().dispatch(request, *args, **kw)
@@ -290,7 +308,31 @@ class MisProductosLista(ProveedorMixin, ListView):
         return ctx
 
 
-class MisProductosCrear(ProveedorMixin, CreateView):
+class _ConFotos:
+    """Las hasta 3 fotos del producto viajan en el mismo formulario que el
+    producto (un `inlineformset` de Django), así el proveedor carga producto y
+    fotos de una sola vez en vez de tener que volver a entrar a editarlo."""
+
+    def get_fotos(self):
+        datos = (self.request.POST, self.request.FILES) if self.request.method == "POST" else ()
+        return FotosProductoFormSet(*datos, instance=self.object or Producto())
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        ctx.setdefault("fotos", self.get_fotos())
+        return ctx
+
+    def form_valid(self, form):
+        fotos = self.get_fotos()
+        if not fotos.is_valid():
+            return self.render_to_response(self.get_context_data(form=form, fotos=fotos))
+        response = super().form_valid(form)  # acá recién existe self.object
+        fotos.instance = self.object
+        fotos.save()
+        return response
+
+
+class MisProductosCrear(_ConFotos, ProveedorMixin, CreateView):
     form_class = MiProductoForm
     template_name = "web/cuenta_productos_form.html"
     success_url = reverse_lazy("web:cuenta_productos")
@@ -310,7 +352,7 @@ class MisProductosCrear(ProveedorMixin, CreateView):
         return super().form_valid(form)
 
 
-class MisProductosEditar(ProveedorMixin, UpdateView):
+class MisProductosEditar(_ConFotos, ProveedorMixin, UpdateView):
     form_class = MiProductoForm
     template_name = "web/cuenta_productos_form.html"
     success_url = reverse_lazy("web:cuenta_productos")
@@ -340,4 +382,60 @@ class MiMembresia(ProveedorMixin, TemplateView):
         ctx["empresa"] = empresa
         ctx["activos"] = empresa.productos_activos_count()
         ctx["limite"] = empresa.limite_productos()
+        return ctx
+
+
+class MisRequerimientos(ProveedorMixin, ListView):
+    """Los leads que llegaron para productos de esta empresa. El contacto del
+    comprador (nombre/email/teléfono) NO se muestra acá — mismo principio que
+    ya rige el sitio público (ver [[feedback-contacto-no-publico]]): el
+    comprador tampoco puede escribirle directo al proveedor, todo pasa por
+    MERCANTE365. El proveedor ve QUÉ le pidieron, no A QUIÉN contactar."""
+
+    template_name = "web/cuenta_requerimientos.html"
+    context_object_name = "requerimientos"
+    paginate_by = 20
+
+    def get_queryset(self):
+        return (
+            Requerimiento.objects.filter(producto__empresa=self.request.user.empresa)
+            .select_related("producto").order_by("-creado")
+        )
+
+
+class MiRedComercial(ProveedorMixin, TemplateView):
+    """Solo tiene datos reales si la empresa es Premium Plus (documento de
+    membresías, sección 12.2-12.3) — si no, la plantilla muestra el upsell."""
+
+    template_name = "web/cuenta_red_comercial.html"
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        empresa = self.request.user.empresa
+        ctx["empresa"] = empresa
+        if empresa.nivel_comercial == Empresa.NivelComercial.PREMIUM_PLUS:
+            ctx["vinculaciones"] = (
+                VendedorProducto.objects.filter(producto__empresa=empresa)
+                .select_related("vendedor", "producto")
+            )
+        return ctx
+
+
+class MisEstadisticas(ProveedorMixin, TemplateView):
+    template_name = "web/cuenta_estadisticas.html"
+
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        empresa = self.request.user.empresa
+        requerimientos = Requerimiento.objects.filter(producto__empresa=empresa)
+        ctx.update({
+            "total_productos": empresa.productos.count(),
+            "activos": empresa.productos_activos_count(),
+            "limite": empresa.limite_productos(),
+            "total_requerimientos": requerimientos.count(),
+            "requerimientos_nuevos": requerimientos.filter(estado=Requerimiento.Estado.NUEVO).count(),
+            "productos_verificados": empresa.productos.filter(
+                estado_verificacion=Producto.EstadoVerificacion.VERIFICADO,
+            ).count(),
+        })
         return ctx

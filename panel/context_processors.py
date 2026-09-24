@@ -3,14 +3,15 @@ desde el dashboard. Sigue el orden de `MENU` (el del Back Office descrito en
 el documento de producto, mezclando recursos reales y secciones
 "Próximamente"). Los recursos que no forman parte de ese menú principal
 (subrecursos como atributos, imágenes, escalas o contactos, que se gestionan
-sueltos por ahora) se agregan al final para que sigan siendo alcanzables.
+sueltos por ahora) se agregan al final para que sigan siendo alcanzables,
+salvo los de `OCULTOS`, que no se muestran en ningún lado del menú.
 
 Un recurso con `permiso` solo aparece acá si `request.user` lo tiene (o es
 superuser) — evita mostrar links a secciones a las que ese staff no puede
 entrar. Las secciones "Próximamente" no tienen permiso propio, son visibles
 para cualquier staff (son solo una página fija, no hay nada que proteger)."""
 
-from panel.urls import MENU, PROXIMAMENTE, RECURSOS
+from panel.urls import MENU, OCULTOS, PROXIMAMENTE, RECURSOS
 
 _RECURSOS_POR_SLUG = {r["slug"]: r for r in RECURSOS}
 _EN_MENU = {slug for _, slug, *_ in MENU}
@@ -36,6 +37,8 @@ def nav(request):
     items += [
         (f"panel:{r['slug']}_list", r["etiqueta_plural"])
         for r in RECURSOS
-        if r["slug"] not in _EN_MENU and _puede_ver(request.user, r)
+        if r["slug"] not in _EN_MENU
+        and r["slug"] not in OCULTOS
+        and _puede_ver(request.user, r)
     ]
     return {"panel_nav": items}

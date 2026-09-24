@@ -76,7 +76,7 @@ a{color:var(--azul);text-decoration:none}
 .tc-items li{background:#242F41;border-radius:10px;padding:12px 14px;font-size:13.5px;
   display:flex;gap:8px;align-items:center}
 .tc-items li::before{content:"✓";color:var(--verde);font-weight:800}
-.tc-stats{display:flex;gap:24px;border-top:1px solid rgba(255,255,255,.12);padding-top:18px}
+.tc-stats{display:flex;flex-wrap:wrap;gap:24px;border-top:1px solid rgba(255,255,255,.12);padding-top:18px}
 .tc-stats .n{display:block;font:800 22px/1 Archivo,sans-serif}
 .tc-stats .n.azul{color:var(--azul)}
 .tc-stats .n.verde{color:var(--verde)}
@@ -160,7 +160,7 @@ a{color:var(--azul);text-decoration:none}
 /* Footer */
 .pie{background:var(--oscuro);color:rgba(255,255,255,.72);padding:36px 0;border-top:1px solid rgba(255,255,255,.08)}
 .pie-int{display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start}
-.pie .marca-box{margin-bottom:12px}
+.pie .marca-box{margin-bottom:14px;background:#fff;padding:8px 12px;border-radius:10px}
 .pie p{max-width:280px;font-size:13px;margin:0}
 .pie .tit{display:block;color:var(--verde);font-weight:700;margin-bottom:8px;font-size:13px}
 .pie a{color:rgba(255,255,255,.8);font-size:13px}
@@ -290,6 +290,14 @@ a{color:var(--azul);text-decoration:none}
 .mis-productos .estado.publicado{background:#F4FAEC;color:#2f5716}
 .mis-productos .acciones a{font-weight:700;font-size:13px;margin-left:12px}
 .mis-productos .acciones .del{color:#E5484D}
+.mis-productos li.observaciones{background:none;border:none;box-shadow:none;padding:0 0 4px 16px;
+  margin-top:-6px;color:var(--muted);font-size:13px}
+.cuenta-nota{color:var(--muted);font-size:13px;margin-top:20px}
+.fotos-tit{margin:24px 0 2px}
+.campo-foto{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.campo-foto input[type=text]{flex:1;min-width:160px}
+.foto-mini{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--borde)}
+.foto-borrar{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:600}
 .mensaje-success{background:#F4FAEC;border:1px solid var(--borde);color:#2f5716;font-weight:700;
   padding:12px 14px;border-radius:8px;margin-bottom:16px}
 .mensaje-error{background:#FDECEC;border:1px solid var(--borde);color:#a52c30;font-weight:700;
@@ -302,7 +310,7 @@ a{color:var(--azul);text-decoration:none}
   overflow:hidden;display:flex;align-items:center;justify-content:center;background:#F7F9FC}
 .perfil-logo img{width:100%;height:100%;object-fit:cover}
 .perfil-logo-vacio{font:800 30px/1 Archivo,sans-serif;color:var(--azul)}
-.perfil-distintivos{display:flex;gap:8px;margin-bottom:8px}
+.perfil-distintivos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .distintivo{font:700 11px/1 ui-monospace,Menlo,monospace;background:#F1F1F1;color:var(--muted);
   padding:5px 9px;border-radius:5px}
 .distintivo.calificado{background:#124332;color:#4ADE80}
@@ -320,33 +328,102 @@ a{color:var(--azul);text-decoration:none}
 
 /* Responsive: celulares, tablets y pantallas angostas en general */
 @media (max-width:760px){
-  .cab-int{justify-content:space-between;min-height:auto}
-  .cab nav{order:3;width:100%;justify-content:center;gap:16px;
-    border-top:1px solid var(--borde);padding-top:12px;margin-top:2px}
+  .cab-int{justify-content:space-between;min-height:auto;gap:12px}
+  .cab .logo{height:auto;width:min(210px,52vw)}
+  .cab nav{order:3;width:100%;justify-content:center;gap:2px 8px;flex-wrap:wrap;
+    border-top:1px solid var(--borde);padding-top:8px;margin-top:2px}
+  .cab nav a{white-space:nowrap;padding:7px 8px}
+  .ingresar{padding:9px 14px}
   .sp{display:none}
   .hero{padding:44px 0 40px}
-  .hero-int{grid-template-columns:1fr;gap:32px}
+  .hero-int{grid-template-columns:minmax(0,1fr);gap:32px}
   .hero h1{font-size:32px}
   .etiqueta{font-size:10px}
   .destacados,.como-funciona,.nosotros,.planes{padding-top:40px;padding-bottom:40px}
-  .nosotros-texto{grid-template-columns:1fr}
-  .stats{grid-template-columns:1fr}
-  .pasos{grid-template-columns:1fr}
-  .detalle-layout{grid-template-columns:1fr}
-  .ficha{grid-template-columns:1fr}
+  .nosotros-texto{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:minmax(0,1fr)}
+  .pasos{grid-template-columns:minmax(0,1fr)}
+  .detalle-layout{grid-template-columns:minmax(0,1fr)}
+  .ficha{grid-template-columns:minmax(0,1fr)}
   .buscador{max-width:none;margin-left:0;width:100%}
   .cat-hero{padding-top:28px}
-  .market-layout{grid-template-columns:1fr}
+  /* `minmax(0,...)` y no `1fr`: con `1fr` la columna hereda min-width:auto y
+     la tira de rubros (nowrap) estiraba toda la grilla a ~620px, o sea la
+     página entera se iba de lado en el celular. */
+  .market-layout{grid-template-columns:minmax(0,1fr)}
   .filtros-sidebar{position:static}
   .filtro-rubros{flex-direction:row;overflow-x:auto;gap:6px}
   .filtro-rubro{flex:none;white-space:nowrap}
-  .perfil-layout{grid-template-columns:1fr}
+  .perfil-layout{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:480px){
   .envoltorio{padding:0 16px}
-  .cab-int{padding:12px 16px}
-  .logo{height:34px}
+  .cab-int{padding:10px 16px}
   .hero h1{font-size:26px}
   .hero p{font-size:15px}
   .btn{width:100%;text-align:center}
+  .buscador .btn{width:auto;flex:none}
+  .cab nav a{font-size:13px;padding:7px 6px}
+}
+
+/* Red Comercial en "Quiénes somos" — solo visualización: nombre, zona y
+   especialidad; ni comisiones ni datos de contacto del vendedor. */
+.red-comercial{padding-bottom:56px}
+.red-comercial h2{margin-bottom:6px}
+.red-intro{color:var(--muted);max-width:720px;margin-bottom:22px}
+.red-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:22px}
+.red-tarjeta{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:#fff;
+  border:1px solid var(--borde);border-radius:10px;padding:16px}
+.red-inicial{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
+  background:var(--azul);color:#fff;font-weight:800}
+.red-zona{color:var(--muted);font-size:13px}
+
+/* Franja de ofertas: va arriba del header en todas las páginas públicas. */
+.franja-oferta{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  background:var(--oscuro);color:#fff;font-size:14px;padding:9px 16px;text-align:center}
+.franja-oferta,.franja-oferta:hover{color:#fff;text-decoration:none}
+.franja-oferta strong{font-weight:800}
+.franja-oferta .franja-cta{font-weight:700;text-decoration:underline}
+.franja-oferta:hover{filter:brightness(1.12)}
+
+/* Contacto de la empresa (perfil del proveedor y ficha de producto). */
+.contacto-caja{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:18px;
+  box-shadow:var(--sombra-chica);margin-bottom:20px}
+.contacto-caja h3{margin:0 0 8px;font-size:16px}
+.contacto-caja p{margin:2px 0}
+.contacto-nombre{font-weight:700}
+.contacto-cargo{color:var(--muted);font-weight:400}
+.contacto-caja .nota{color:var(--muted);font-size:13px;margin-top:10px}
+
+/* Responsive de los bloques definidos más abajo que las @media de arriba
+   (franja, red comercial, contacto, fotos) + ajustes de toque. */
+@media (max-width:760px){
+  .franja-oferta{font-size:12.5px;padding:7px 12px;gap:6px;line-height:1.35}
+  /* Barra de la cuenta: una sola línea que se arrastra, como la del panel,
+     en vez de tres renglones de links apilados. */
+  .cuenta-nav{gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:8px}
+  .cuenta-nav::-webkit-scrollbar{display:none}
+  .cuenta-nav a{white-space:nowrap;padding:8px 10px}
+  .cuenta-nav form{margin-left:auto}
+  .cuenta-salir{white-space:nowrap}
+  /* El input de archivo es ancho y no se deja achicar: cada foto en su fila. */
+  .campo-foto{flex-direction:column;align-items:stretch;gap:8px}
+  .campo-foto input[type=file]{max-width:100%}
+  .pie-int{gap:26px}
+  .contacto-caja p{overflow-wrap:anywhere}
+}
+@media (max-width:480px){
+  .franja-oferta .franja-cta{display:none}  /* la franja entera ya es el link */
+  .red-grid{grid-template-columns:minmax(0,1fr)}
+}
+/* Celular acostado: la pantalla mide ~360px de alto, así que la cabecera
+   tiene que ocupar lo mínimo o se come la pantalla entera. */
+@media (max-width:900px) and (orientation:landscape){
+  .franja-oferta{padding:5px 12px;font-size:12px}
+  .cab-int{padding-top:8px;padding-bottom:8px}
+  .cab nav{order:0;width:auto;border-top:none;padding-top:0;margin-top:0}
+  .sp{display:block}
+  .hero{padding:28px 0}
+  .foto-grande{max-height:60vh}
+  .foto-grande img{object-fit:contain;background:#fff}
 }

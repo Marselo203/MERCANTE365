@@ -513,7 +513,7 @@ class Producto(models.Model):
 
     @property
     def imagen_principal(self):
-        return self.imagenes.filter(es_principal=True).first()
+        return self.imagenes.filter(es_principal=True).first() or self.imagenes.first()
 
     @property
     def es_verificado(self):
@@ -564,6 +564,8 @@ class Producto(models.Model):
 
 
 class ImagenProducto(models.Model):
+    MAX_POR_PRODUCTO = 3
+
     producto = models.ForeignKey(
         Producto, on_delete=models.CASCADE, related_name="imagenes",
         help_text="Producto al que pertenece esta imagen.",
@@ -593,6 +595,19 @@ class ImagenProducto(models.Model):
 
     def __str__(self):
         return f"{self.producto} · imagen {self.pk}"
+
+    def clean(self):
+        # El tope de 3 fotos por producto vive acá y no en cada formulario:
+        # tanto el panel de gestión como la cuenta del proveedor cargan
+        # imágenes, y los dos pasan por esta validación.
+        if not self.producto_id:
+            return
+        otras = ImagenProducto.objects.filter(producto_id=self.producto_id).exclude(pk=self.pk).count()
+        if otras >= self.MAX_POR_PRODUCTO:
+            raise ValidationError(
+                f"Este producto ya tiene {self.MAX_POR_PRODUCTO} fotos, que es el máximo. "
+                "Borrá una para subir otra."
+            )
 
     def save(self, *args, **kw):
         # Marcar una imagen como principal desplaza a la anterior en vez de

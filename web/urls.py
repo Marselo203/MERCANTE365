@@ -18,7 +18,14 @@ urlpatterns = [
     path("cuenta/registro/", views.RegistroProveedor.as_view(), name="cuenta_registro"),
     path(
         "cuenta/ingresar/",
-        LoginView.as_view(template_name="web/cuenta_login.html", redirect_authenticated_user=True),
+        LoginView.as_view(
+            template_name="web/cuenta_login.html",
+            # Sin esto cae en LOGIN_REDIRECT_URL (el panel de staff) y el
+            # proveedor se come un 403 apenas inicia sesión. `?next=` sigue
+            # teniendo prioridad sobre esto.
+            next_page="web:cuenta_empresa",
+            redirect_authenticated_user=True,
+        ),
         name="cuenta_login",
     ),
     path("cuenta/salir/", LogoutView.as_view(next_page="web:home"), name="cuenta_logout"),
@@ -31,4 +38,7 @@ urlpatterns = [
         views.MisProductosEliminar.as_view(), name="cuenta_productos_del",
     ),
     path("cuenta/membresia/", views.MiMembresia.as_view(), name="cuenta_membresia"),
+    path("cuenta/requerimientos/", views.MisRequerimientos.as_view(), name="cuenta_requerimientos"),
+    path("cuenta/red-comercial/", views.MiRedComercial.as_view(), name="cuenta_red_comercial"),
+    path("cuenta/estadisticas/", views.MisEstadisticas.as_view(), name="cuenta_estadisticas"),
 ]

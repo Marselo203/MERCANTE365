@@ -1,0 +1,14 @@
+{% comment %}Contacto principal de la empresa. Público desde el pedido del
+cliente del 19/09/2026 — se muestra en el perfil del proveedor y en la ficha
+de cada producto. `contacto` lo pone la vista; si la empresa no cargó ninguno
+este bloque no se dibuja.{% endcomment %}
+{% if contacto %}
+<div class="contacto-caja">
+  <h3>📞 Contacto</h3>
+  <p class="contacto-nombre">{{ contacto.nombre }}{% if contacto.cargo %} <span class="contacto-cargo">· {{ contacto.cargo }}</span>{% endif %}</p>
+  <p><a href="mailto:{{ contacto.email }}">{{ contacto.email }}</a></p>
+  {% if contacto.telefono %}<p><a href="tel:{{ contacto.telefono }}">{{ contacto.telefono }}</a></p>{% endif %}
+  <p class="nota">También podés enviar un requerimiento y el equipo de MERCANTE365 gestiona la
+  coincidencia por vos.</p>
+</div>
+{% endif %}

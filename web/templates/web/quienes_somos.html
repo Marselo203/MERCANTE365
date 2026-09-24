@@ -25,7 +25,30 @@
     <div class="stat"><span class="icono">🏭</span><span class="n">{{ stats.proveedores }}</span><span class="t">proveedor{{ stats.proveedores|pluralize:"es" }} verificado{{ stats.proveedores|pluralize }}</span></div>
     <div class="stat"><span class="icono">📦</span><span class="n">{{ stats.productos }}</span><span class="t">producto{{ stats.productos|pluralize }} publicado{{ stats.productos|pluralize }}</span></div>
     <div class="stat"><span class="icono">🗂️</span><span class="n">{{ stats.rubros }}</span><span class="t">rubro{{ stats.rubros|pluralize }} disponible{{ stats.rubros|pluralize }}</span></div>
+    <div class="stat"><span class="icono">🤝</span><span class="n">{{ stats.vendedores }}</span><span class="t">vendedor{{ stats.vendedores|pluralize:"es" }} en la red</span></div>
   </div>
+</section>
+
+<section class="red-comercial envoltorio">
+  <h2>🤝 Red Comercial MERCANTE365</h2>
+  <p class="red-intro">Vendedores independientes que conocen su zona y su rubro, y que acercan
+  los productos de nuestros proveedores a compradores reales. Están disponibles para las
+  empresas con plan Premium Plus.</p>
+  {% if vendedores %}
+  <div class="red-grid">
+    {% for v in vendedores %}
+    <div class="red-tarjeta">
+      <span class="red-inicial">{{ v.nombre|slice:":1"|upper }}</span>
+      <strong>{{ v.nombre }}</strong>
+      {% if v.zona %}<span class="red-zona">📍 {{ v.zona }}</span>{% endif %}
+      {% if v.especialidad %}<span class="chip">{{ v.especialidad }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="vacio">Estamos sumando vendedores a la red. Si querés integrarte, escribinos.</p>
+  {% endif %}
+  <a class="btn" href="{% url 'web:planes' %}">Acceder con Premium Plus</a>
 </section>
 
 {% include "web/_footer.html" %}

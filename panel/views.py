@@ -100,9 +100,12 @@ def _anillo_verificacion():
     pct = round(verificados / publicados * 100) if publicados else 0
     radio = 42
     circunferencia = 2 * math.pi * radio
+    # Enteros a propósito: con decimales el locale es-CL los escribe con coma
+    # y el navegador lee stroke-dasharray="187,4 263,9" como cuatro valores
+    # (anillo punteado en vez de un arco). Redondear cuesta <0.4% del arco.
     return {
-        "pct": pct, "radio": radio, "circunferencia": round(circunferencia, 1),
-        "trazo": round(circunferencia * pct / 100, 1),
+        "pct": pct, "radio": radio, "circunferencia": round(circunferencia),
+        "trazo": round(circunferencia * pct / 100),
         "verificados": verificados, "publicados": publicados,
     }
 

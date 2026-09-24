@@ -1,6 +1,9 @@
 <nav class="cuenta-nav">
   <a href="{% url 'web:cuenta_empresa' %}"{% if request.resolver_match.url_name == "cuenta_empresa" %} class="activo"{% endif %}>Mi empresa</a>
   <a href="{% url 'web:cuenta_productos' %}"{% if "cuenta_productos" in request.resolver_match.url_name %} class="activo"{% endif %}>Mis productos</a>
+  <a href="{% url 'web:cuenta_requerimientos' %}"{% if request.resolver_match.url_name == "cuenta_requerimientos" %} class="activo"{% endif %}>Requerimientos</a>
+  <a href="{% url 'web:cuenta_red_comercial' %}"{% if request.resolver_match.url_name == "cuenta_red_comercial" %} class="activo"{% endif %}>Red Comercial</a>
+  <a href="{% url 'web:cuenta_estadisticas' %}"{% if request.resolver_match.url_name == "cuenta_estadisticas" %} class="activo"{% endif %}>Estadísticas</a>
   <a href="{% url 'web:cuenta_membresia' %}"{% if request.resolver_match.url_name == "cuenta_membresia" %} class="activo"{% endif %}>Mi membresía</a>
   <span class="sp"></span>
   <form method="post" action="{% url 'web:cuenta_logout' %}">{% csrf_token %}<button class="cuenta-salir">Salir</button></form>

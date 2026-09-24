@@ -1,0 +1,41 @@
+{% extends "web/base.html" %}
+{% block title %}Requerimientos recibidos — MERCANTE365{% endblock %}
+{% block body %}
+
+{% include "web/_header.html" %}
+
+<section class="envoltorio detalle">
+  {% include "web/_cuenta_nav.html" %}
+
+  <div class="cuenta-cab">
+    <h1>Requerimientos recibidos</h1>
+  </div>
+  <p class="ayuda">Los datos de contacto de quien pregunta no se muestran acá — MERCANTE365
+  clasifica cada requerimiento y te contacta directo cuando corresponde avanzar.</p>
+
+  <ul class="mis-productos">
+    {% for r in requerimientos %}
+    <li>
+      <span class="nombre">{{ r.producto.nombre }}</span>
+      <span class="estado{% if r.estado == "respondido" %} publicado{% endif %}">{{ r.get_estado_display }}</span>
+      <span>{{ r.volumen_requerido|default:"—" }}{% if r.plazo_esperado %} · {{ r.plazo_esperado }}{% endif %}</span>
+      <span class="precio">{{ r.creado|date:"d/m/Y" }}</span>
+    </li>
+    {% if r.observaciones %}<li class="observaciones">💬 {{ r.observaciones }}</li>{% endif %}
+    {% empty %}
+    <p class="vacio">Todavía no te llegó ningún requerimiento.</p>
+    {% endfor %}
+  </ul>
+
+  {% if is_paginated %}
+  <div class="pag">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+    <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Siguiente ›</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/_footer.html" %}
+
+{% endblock %}
