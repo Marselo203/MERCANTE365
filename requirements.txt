@@ -4,3 +4,4 @@ gunicorn==23.*
 Pillow==11.*
 django-storages[s3]==1.14.*
 python-dotenv==1.*
+whitenoise==6.*

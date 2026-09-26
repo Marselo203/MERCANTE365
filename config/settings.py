@@ -53,6 +53,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Sirve /static/ desde gunicorn: en Railway no hay nginx delante.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "web.middleware.CapturarReferidoMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -148,7 +150,8 @@ if USAR_OBJECT_STORAGE:
             # OCI y MinIO requieren direccionamiento por ruta, no por subdominio.
             "addressing_style": "path",
             "file_overwrite": False,
-            "querystring_auth": False,
+            # Los buckets de Railway son privados: ahí va en 1 (URLs firmadas).
+            "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", False),
             "default_acl": None,
             # Opcional: dominio "público" para las URLs que se muestran en el
             # sitio, si es distinto del endpoint que usa el backend para subir
@@ -171,7 +174,7 @@ STORAGES = {
         "BACKEND": (
             "django.contrib.staticfiles.storage.StaticFilesStorage"
             if DEBUG
-            else "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
         ),
     },
 }
