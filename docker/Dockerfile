@@ -35,13 +35,13 @@ RUN useradd --uid 10001 --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-# gunicorn escucha en 0.0.0.0:$PORT si no se le pasa --bind. Railway inyecta PORT.
-ENV PORT=8000
+# gunicorn toma $PORT y $WEB_CONCURRENCY del entorno; Railway puede pisar ambas.
+ENV PORT=8000 \
+    WEB_CONCURRENCY=3
 EXPOSE 8000
 
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["gunicorn", "config.wsgi:application", \
-     "--workers", "3", \
      "--threads", "2", \
      "--timeout", "60", \
      "--access-logfile", "-", \
